@@ -8,7 +8,8 @@ Imports Microsoft.Office.Interop
 ''' </summary>
 <ComVisible(True)>
 <ClassInterface(ClassInterfaceType.AutoDispatch)>
-Public Class Logger '<ProgID("LogAddin.Logger")>
+<ProgId("LogAddin.Logger")>
+Public Class Logger
 
     <DllImport("kernel32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
     Public Shared Function AttachConsole(dwProcessId As Integer) As Boolean
