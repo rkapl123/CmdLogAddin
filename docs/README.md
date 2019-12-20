@@ -25,22 +25,22 @@ In starting command:
 
 ## Logging
 
-CmdLogAddin provides a logging tool to be used in VB(A), VBS and other COM-enabled environments.  
+CmdLogAddin provides a logging tool to be used in VBA.  
 
 Usage: First create a logger object:  
 `Set theLogger = CreateObject("LogAddin.Logger")`
 
 and initialise this object using the setProperties Method (all arguments are optional and have default values, except the CallingObject):  
-* theCallingObject .. The calling object (excel workbook) ...
+* theCallingObject .. The calling excel workbook ...
 * theLogLevel ..  (ERROR 1,  WARN 2, INFO 4, DEBUG 8), default = 4
-* theLogFilePath .. where to write the logfile (LogFilePath), defaults to callingObject's path
+* theLogFilePath .. where to write the logfile (LogFilePath), defaults to theCallingObject's path
 * theEnv .. environment, empty if production, used to append env to LogFilePath for test/other environments
-* theCaller .. if caller is not the callingObject (commonCaller) then this can be used to identify the active caller (in case of an addin handling multiple workbooks/documents/..).  
+* theCaller .. if caller is not the callingObject (commonCaller) then this can be used to identify the active caller (in case of an addin handling multiple workbooks..).  
  Can include the full path to the calling workbook/document/..,  
  the Caller's name will be extracted by using last "\" as separator  
 * theMailRecipients .. comma separated list of the error mail recipients
 * theSubject .. the error mail's subject
-* writeToEventLog .. should messages be written to the windows event log (true) or to a file (false), if you want to have decent log entries, register the caller (theTestLog.ext) in the registry (Admin rights required, see appendix “registering log sources”).
+* writeToEventLog .. should messages be written to the windows event log (true) or to a file (false)
 * theSender .. the Sender of the sent error mails
 * theMailIntro .. the intro for the error mail's body
 * theMailGreetings .. the greetings for the error mail's body, body looks as follows:  
@@ -49,7 +49,7 @@ and initialise this object using the setProperties Method (all arguments are opt
     [logPathMsg]  
     [MailGreetings]  
 * overrideCommonCaller .. whether to override CallingObjectName (filename to log to) with theCaller
-* doMirrorToStdOut .. whether to mirror log messages to the standard output (requires cscript execution of scripts) or a separate debug window (VB/VBA/WSCRIPT !)
+* doMirrorToStdOut .. whether to mirror log messages to the standard output of the invoking cmd session
 
 Example:  
 `theLogger.setProperties ThisWorkbook, theEnv:=env, theLoglevel:=8, theLogFilePath:="Logs", theMailRecipients:="admin@somewhere.com", doMirrorToStdOut:=True`
@@ -61,7 +61,7 @@ Log messages are written by using methods LogError, LogWarn, LogInfo, LogDebug a
 `theLogger.LogDebug "testLog logging debug"`  
 
 Caller settings can also be changed within the active session:  
-`theLogger.setProperties Wscript, , , ,"theTestLog.ext"`  
+`theLogger.setProperties ThisWorkbook, , , ,"theTestLog.ext"`  
 `theLogger.LogError "theTestLog.ext: logging error"`  
 `theLogger.LogWarn "theTestLog.ext: logging warning"`  
 `theLogger.LogInfo "theTestLog.ext: logging info"`  
@@ -97,13 +97,13 @@ In case of internal errors or problesm with settings, try to send to this
 `"cdoInternalErrMailRcpt"="MAIL-address1@domain, MAIL-address2@domain"`
 
 Default Subject, Sender, Intro and Greetings for error mails...  
-`"defaultSubject"="Batch Process Error"`
-`"defaultSender"="Administrator@domain"`
-`"defaultMailIntro"="Following error occured in batch process"`
-`"defaultMailGreetings"="regards, your Errorlog..."`
+`"defaultSubject"="Batch Process Error"`  
+`"defaultSender"="Administrator@domain"`  
+`"defaultMailIntro"="Following error occured in batch process"`  
+`"defaultMailGreetings"="regards, your Errorlog..."`  
 
 Format for logentry timestamp  
-`"timeStampFormat"="DD.MM.YYYY"`
+`"timeStampFormat"="dd.MM.yyyy HH:mm:ss"`
 
 Layout for logentries: first column logentry0, then logentry1, .. logentryN. The values (timestamp, loglevel, caller, logmessage) are fixed in the code but can be arranged differently, additional columns can be added as well.  
 
