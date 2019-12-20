@@ -21,7 +21,7 @@ In starting command:
 * start excel external procedure (Workbook in same directory as TestExcelCmdArgFetching.xls) with argument arg1  
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" %~dp0TestExcelCmdArgFetching.xls /e/startExt/Test.xla!start/arg1`
 * start excel external procedure (Workbook in different directory as TestExcelCmdArgFetching.xls)  
-`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" %~dp0TestExcelCmdArgFetching.xls /e/startExt/'C:\dev\CmdArgs\install\Test.xla'!start/arg1`
+`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" %~dp0TestExcelCmdArgFetching.xls /e/startExt/'C:\dev\CmdLogAddin\TestExcelCmdArgFetchingExt.xls'!testMacro/arg1`
 
 ## Logging
 
