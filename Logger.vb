@@ -2,12 +2,10 @@ Imports System.IO
 Imports System.Runtime.InteropServices
 Imports Microsoft.Office.Interop
 
-'---------------------------------------------------------------------------------------
-' Class     : Logger
-' Purpose   : main class to be used in clients: set theLogger = createObject("LogAddin.Logger")
-'             doing logging with LogError, LogWarn, LogInfo, LogDebug and LogStream
-'             Logger properties are set with setProperties.
-'---------------------------------------------------------------------------------------
+''' <summary>main class to be used in clients: set theLogger = createObject("LogAddin.Logger")
+'''          doing logging with LogError, LogWarn, LogInfo, LogDebug and LogStream
+'''          Logger properties are set with setProperties.
+''' </summary>
 <ComVisible(True)>
 <ClassInterface(ClassInterfaceType.AutoDispatch)>
 Public Class Logger '<ProgID("LogAddin.Logger")>
@@ -52,6 +50,7 @@ Public Class Logger '<ProgID("LogAddin.Logger")>
     Private timeStampFormat As String  '"DD.MM.YYYY HH:mm:ss"
     Private logentry() As String
 
+    ''' <summary></summary>
     Public Sub New()
         cdoUserID = fetchSetting("cdoUserID", "")
         cdoPassword = fetchSetting("cdoPassword", "")
@@ -80,40 +79,33 @@ Public Class Logger '<ProgID("LogAddin.Logger")>
         mirrorToStdOut = False
     End Sub
 
-    ' fetchSetting
-    '
-    ' encapsulates setting fetching (currently registry)
-    '---------------------------------------------------------------------------------------
+    ''' <summary>encapsulates setting fetching (currently registry)</summary>
+    ''' <param name="Key">key of setting</param>
+    ''' <param name="defaultValue">default value to be used if no setting given</param>
+    ''' <returns>setting value</returns>
     Private Function fetchSetting(Key As String, defaultValue As Object) As Object
         fetchSetting = GetSetting("LogAddin", "Settings", Key, defaultValue)
     End Function
 
-    ' setProperties
-    '
-    ' sets properties for the Logger object, all parameters optional except theCallingObject !
-    ' theCallingObject .. the calling object (excel workbook, word document, access project, etc..),
-    '                  must have a "Name" and "Path" property and a "Quit" method (to allow LogFatal to end it)...
-    '
-    ' The other arguments are optional:
-    ' theLogLevel ..  (ERROR 1,  WARN 2, INFO 4, DEBUG 8), default = 4
-    ' theLogFilePath .. where to write the logfile (LogFilePath), defaults to callingObject's path
-    ' theEnv .. environment, empty if production, used to append env to LogFilePath for test/other environments
-    ' theCaller .. if caller is not the callingObject (commonCaller) then this can be used to
-    '               identify the active caller (in case of an addin handling multiple workbooks/documents/..).
-    '               Can include the full path to the calling workbook/document/..,
-    '               the Caller's name will be extracted by using last "\" as separator
-    ' theMailRecipients .. comma separated list of the error mail recipients
-    ' theSubject .. the error mail's subject
-    ' writeToEventLog .. should messages be written to the windows event log (true) or to a file (false)
-    ' theSender .. the Sender of the sent error mails
-    ' theMailIntro .. the intro for the error mail's body
-    ' theMailGreetings .. the greetings for the error mail's body, body looks as follows:
-    ' <MailIntro> (executed in: <commonCaller>, current caller: <Caller>):
-    ' <logLine>
-    ' <logPathMsg>
-    ' <MailGreetings>
-    ' overrideCommonCaller .. whether to override CallingObjectName (filename to log to) with theCaller
-    ' doMirrorToStdOut .. whether to mirror log messages to the standard output (requires cscript execution of scripts) or a separate debug window (VB/VBA/WSCRIPT !)
+    ''' <summary>sets properties for the Logger object, all parameters optional except theCallingObject</summary>
+    ''' <param name="theCallingObject">the calling object (excel workbook)</param>
+    ''' <param name="theLogLevel">log level (ERROR 1,  WARN 2, INFO 4, DEBUG 8), default = 4</param>
+    ''' <param name="theLogFilePath">where to write the logfile (LogFilePath), defaults to callingObject's path</param>
+    ''' <param name="theEnv">environment, empty if production, used to append env to LogFilePath for test/other environments</param>
+    ''' <param name="theCaller">if caller is not the callingObject (commonCaller) then this can be used to identify the active caller (in case of an addin handling multiple workbooks/documents/..).
+    '''               Can include the full path to the calling workbook/document/.., the Caller's name will be extracted by using last "\" as separator</param>
+    ''' <param name="theMailRecipients">comma separated list of the error mail recipients</param>
+    ''' <param name="theSubject">the error mail's subject</param>
+    ''' <param name="writeToEventLog">should messages be written to the windows event log (true) or to a file (false)</param>
+    ''' <param name="theSender">the Sender of the sent error mails</param>
+    ''' <param name="theMailIntro">the intro for the error mail's body</param>
+    ''' <param name="theMailGreetings">the greetings for the error mail's body, body looks as follows:
+    ''' [MailIntro] (executed in: [commonCaller], current caller: [Caller]):
+    ''' [logLine]
+    ''' [logPathMsg]
+    ''' [MailGreetings]</param>
+    ''' <param name="overrideCommonCaller">whether to override CallingObjectName (filename to log to) with theCaller</param>
+    ''' <param name="doMirrorToStdOut">whether to mirror log messages to the standard output (requires cscript execution of scripts) or a separate debug window (VB/VBA/WSCRIPT !)</param>
     Public Sub setProperties(Optional theCallingObject As Excel.Workbook = Nothing, Optional theLogLevel As Integer = 4, Optional theLogFilePath As String = Nothing,
         Optional theEnv As String = Nothing, Optional theCaller As String = Nothing, Optional theMailRecipients As String = Nothing,
         Optional theSubject As String = Nothing, Optional writeToEventLog As Boolean = False, Optional theSender As String = Nothing, Optional theMailIntro As String = Nothing,
@@ -146,51 +138,48 @@ Public Class Logger '<ProgID("LogAddin.Logger")>
             Exit Sub
         End If
         On Error Resume Next
-        callingObject = theCallingObject
-        commonCaller = callingObject.Name
-        callingObjectPath = callingObject.Path
-        If Not IsNothing(theCaller) Then
-            callerFullPath = theCaller
-            Caller = theCaller
-            If InStr(1, callerFullPath, "\") Then Caller = Mid$(callerFullPath, InStrRev(callerFullPath, "\") + 1)
+1:      callingObject = theCallingObject
+2:      commonCaller = callingObject.Name
+3:      callingObjectPath = callingObject.Path
+4:      If Not IsNothing(theCaller) Then
+5:          callerFullPath = theCaller
+6:          Caller = theCaller
+7:          If InStr(1, callerFullPath, "\") Then Caller = Mid$(callerFullPath, InStrRev(callerFullPath, "\") + 1)
         End If
-        If Len(callerFullPath) = 0 Then
-            Caller = commonCaller
-            callerFullPath = callingObjectPath & "\" & commonCaller
+8:      If Len(callerFullPath) = 0 Then
+9:          Caller = commonCaller
+10:         callerFullPath = callingObjectPath & "\" & commonCaller
         End If
-        CallerInfo = "Caller: " & Caller & ",callerFullPath: " & callerFullPath
+11:     CallerInfo = "Caller: " & Caller & ",callerFullPath: " & callerFullPath
         On Error GoTo setProperties_Err
-        If Not (IsNothing(theLogFilePath)) Then LogFilePath = theLogFilePath
-        If Len(LogFilePath) = 0 Then LogFilePath = callingObjectPath
+12:     If Not (IsNothing(theLogFilePath)) Then LogFilePath = theLogFilePath
+13:     If Len(LogFilePath) = 0 Then LogFilePath = callingObjectPath
         ' if no absolute path was given (drive mapping or unc), prepend callingObjectPath
-        If Left(LogFilePath, 2) <> "\\" And InStr(1, LogFilePath, ":") = 0 Then LogFilePath = callingObjectPath & "\" & LogFilePath
+14:     If Left(LogFilePath, 2) <> "\\" And InStr(1, LogFilePath, ":") = 0 Then LogFilePath = callingObjectPath & "\" & LogFilePath
 
         LogLevel = theLogLevel
-        If Not (IsNothing(theEnv)) Then env = theEnv
-        If Not (IsNothing(theMailRecipients)) Then mailRecipients = theMailRecipients
-        If Not (IsNothing(theSubject)) Then Subject = theSubject
-        doEventLog = writeToEventLog
-        If Not (IsNothing(theSender)) Then Sender = theSender
-        If Not (IsNothing(theMailIntro)) Then MailIntro = theMailIntro
-        If Not (IsNothing(theMailGreetings)) Then MailGreetings = theMailGreetings
-        If overrideCommonCaller Then commonCaller = theCaller
-        mirrorToStdOut = doMirrorToStdOut
-        If doMirrorToStdOut Then AttachConsole(-1)
+15:     If Not (IsNothing(theEnv)) Then env = theEnv
+16:     If Not (IsNothing(theMailRecipients)) Then mailRecipients = theMailRecipients
+17:     If Not (IsNothing(theSubject)) Then Subject = theSubject
+18:     doEventLog = writeToEventLog
+19:     If Not (IsNothing(theSender)) Then Sender = theSender
+20:     If Not (IsNothing(theMailIntro)) Then MailIntro = theMailIntro
+21:     If Not (IsNothing(theMailGreetings)) Then MailGreetings = theMailGreetings
+22:     If overrideCommonCaller Then commonCaller = theCaller
+23:     mirrorToStdOut = doMirrorToStdOut
+        ' -1 is parent process of current process (excel) -> cmd console starting excel
+24:     If doMirrorToStdOut Then AttachConsole(-1)
         Exit Sub
 
 setProperties_Err:
         Dim ErrDesc As String : ErrDesc = "Error: " & Err.Description & ", line " & Erl() & " in Logger.setProperties"
-        LogToEventViewer("commonCaller = " & commonCaller & ", callingObjectPath = " & callingObjectPath & ", callerFullPath = " & callerFullPath & "Caller = " & Caller & ", callingObject.Name = " & callingObject.Name & ", mirrorToStdOut = " & mirrorToStdOut & ", LogLevel = " & LogLevel & ", env =" & env & ", mailRecipients = " & mailRecipients & ", Subject = " & Subject & ", doEventLog = " & doEventLog & ", Sender = " & Sender & ", MailIntro = " & MailIntro & ", MailGreetings = " & MailGreetings)
-        Err.Raise(513, "Logger.setProperties", ErrDesc)
+        LogToEventViewer(ErrDesc & ", commonCaller = " & commonCaller & ", callingObjectPath = " & callingObjectPath & ", callerFullPath = " & callerFullPath & "Caller = " & Caller & ", callingObject.Name = " & callingObject.Name & ", mirrorToStdOut = " & mirrorToStdOut & ", LogLevel = " & LogLevel & ", env =" & env & ", mailRecipients = " & mailRecipients & ", Subject = " & Subject & ", doEventLog = " & doEventLog & ", Sender = " & Sender & ", MailIntro = " & MailIntro & ", MailGreetings = " & MailGreetings)
     End Sub
 
 
-    ' LogWrite
-    ' writes log information messages to defined Logfiles
-    '
-    ' Args:
-    ' LogMessage .. Message to be logged
-    ' LogPrio .. (optional) priority level (ERROR 1,  WARN 2, INFO 4, DEBUG 8)
+    ''' <summary>writes log information messages to defined Logfiles</summary>
+    ''' <param name="LogMessage">Message to be logged</param>
+    ''' <param name="LogPrio">priority level (ERROR 1,  WARN 2, INFO 4, DEBUG 8)</param>
     Private Sub LogWrite(LogMessage As String, LogPrio As EventLogEntryType)
 
         Dim theLogFileStr, MailFileLink, FileMessage As String
@@ -225,76 +214,63 @@ LogWrite_Err:
         LogToEventViewer(IIf(doEventLog, "", "trying to Log to file: " & theLogFileStr) & ", Error: " & Err.Description & ", line " & Erl() & " in Logger.LogWrite")
     End Sub
 
-    ' LogError, LogWarn, LogInfo, LogDebug
-    '
-    ' writes a log message LogMessage having appropriate priority
-    ' (As shown in funtion name, usually INFO, ERROR.., etc) depending on log level set
-    ' in global const Loglevel (0 = ERROR, 1 = WARN, 2 = INFO, 3 = DEBUG)
+    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in funtion name) depending on log level set</summary>
+    ''' <param name="LogMessage"></param>
     Public Sub LogError(LogMessage As String)
-        On Error GoTo LogError_Err
-        Err.Clear()
         LogWrite(LogMessage, EventLogEntryType.Error)
-        Exit Sub
-
-LogError_Err:
-        LogToEventViewer("Error: " & Err.Description & ", line " & Erl() & " in Logger.LogError")
     End Sub
 
+    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in funtion name) depending on log level set</summary>
+    ''' <param name="LogMessage"></param>
     Public Sub LogWarn(LogMessage As String)
-        On Error GoTo LogWarn_Err
         If LogLevel >= EventLogEntryType.Warning Then
             LogWrite(LogMessage, EventLogEntryType.Warning)
         End If
-        Exit Sub
-
-LogWarn_Err:
-        LogToEventViewer("Error: " & Err.Description & ", line " & Erl() & " in Logger.LogWarn")
     End Sub
 
+    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in funtion name) depending on log level set</summary>
+    ''' <param name="LogMessage"></param>
     Public Sub LogInfo(LogMessage As String)
-        On Error GoTo LogInfo_Err
         If LogLevel >= EventLogEntryType.Information Then
             LogWrite(LogMessage, EventLogEntryType.Information)
         End If
-        Exit Sub
-
-LogInfo_Err:
-        LogToEventViewer("Error: " & Err.Description & ", line " & Erl() & " in Logger.LogInfo")
     End Sub
 
+    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in funtion name) depending on log level set</summary>
+    ''' <param name="LogMessage"></param>
     Public Sub LogDebug(LogMessage As String)
-        On Error GoTo LogDebug_Err
         If LogLevel >= EventLogEntryType.SuccessAudit Then
             LogWrite(LogMessage, EventLogEntryType.SuccessAudit)
         End If
-        Exit Sub
-
-LogDebug_Err:
-        LogToEventViewer("Error: " & Err.Description & ", line " & Erl() & " in Logger.LogDebug")
     End Sub
 
+    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in funtion name) depending on log level set and ends Excel</summary>
+    ''' <param name="LogMessage"></param>
     Public Sub LogFatal(LogMessage As String)
         LogError(LogMessage)
         callingObject.Parent.DisplayAlerts = False
         callingObject.Parent.Quit
     End Sub
 
-    ' LogToEventViewer
-    '
-    ' Logs sErrMsg of eEventType in eCategory to EventLog
+    ''' <summary>Logs sErrMsg of eEventType in eCategory to EventLog</summary>
+    ''' <param name="sErrMsg"></param>
+    ''' <param name="eEventType"></param>
+    ''' <param name="sendIntErrMail"></param>
     Public Sub LogToEventViewer(sErrMsg As String, Optional eEventType As EventLogEntryType = EventLogEntryType.Error, Optional sendIntErrMail As Boolean = False)
         Dim eventLog As EventLog = New EventLog("Application")
+        ' .Net Runtime is always there if .Net is installed
         EventLog.WriteEntry(".NET Runtime", sErrMsg, eEventType, 1000)
         If sendIntErrMail Then sendMail(sErrMsg, "", True)
     End Sub
 
-    ' sendMail
-    '
-    ' sends an error mail containing the logged line (logLine) and a hyperlink to the logfile (logPathMsg)
+    ''' <summary>sends an Error mail containing the logged line (logLine) And a hyperlink To the logfile (logPathMsg)</summary>
+    ''' <param name="logLine"></param>
+    ''' <param name="logPathMsg"></param>
+    ''' <param name="internalErr"></param>
     Private Sub sendMail(logLine As String, logPathMsg As String, Optional internalErr As Boolean = False)
 
         ' construct mail message
-        Dim Subject As String = IIf(internalErr, "LogAddin Internal Error !", IIf(Len(Subject) = 0, defaultSubject, Subject))
+        Dim theSubject As String = IIf(internalErr, "LogAddin Internal Error !", IIf(Len(Subject) = 0, defaultSubject, Subject))
         Dim FromAddr As String = IIf(Len(Sender) = 0, defaultSender, Sender)
         If Len(FromAddr) = 0 Then
             LogToEventViewer("objMessage.From is empty, please ensure valid sender !")
@@ -309,7 +285,7 @@ LogDebug_Err:
            & logLine & vbLf & vbLf _
            & logPathMsg & vbLf & vbLf _
            & IIf(Len(MailGreetings) = 0, defaultMailGreetings, MailGreetings))
-        Dim objMessage As System.Net.Mail.MailMessage = New System.Net.Mail.MailMessage(FromAddr, ToAddr, Subject, TextBody)
+        Dim objMessage As System.Net.Mail.MailMessage = New System.Net.Mail.MailMessage(FromAddr, ToAddr, theSubject, TextBody)
 
         ' send the message
         Dim client As System.Net.Mail.SmtpClient = New System.Net.Mail.SmtpClient(cdoServerName, cdoServerPort)

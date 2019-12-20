@@ -1,43 +1,45 @@
+''' <summary>All procedures for fetching from the command line of excel and starting a given macro</summary>
 Module CmdLineFetcher
 
+    ''' <summary>get excel arguments from command line of excel and start the macro given after Start or StartExt</summary>
+    ''' <param name="argStart">argument starting portion to scan for ("/e" is the most harmless choice for excel)</param>
+    ''' <param name="argSep">separator used for further separation of arguments being passed to macro</param>
     Sub getArgumentsAndStartMakro(Optional argStart As String = "/e", Optional argSep As String = "/")
-        Dim CmdCaller As String, CallingWB As String
-        Dim Args As Object, ArgPos As Long
+        Dim CmdCaller As String = "", CallingWB As String = ""
+        Dim Args As Object
         Dim CmdLineArgs() As String
 
         Try
+            ' get Array of CmdLine Arguments
             CmdLineArgs = Environment.GetCommandLineArgs()
+            ' get CmdLine Argument starting with argStart ("/e")
             Dim ExcelMakroArg As String = FlaggedArg(argStart, CmdLineArgs, True)
-            ' actual cmdline args
-            ' Excel-passed cmd args, following "/e", separated by "/"
+            ' get actual passed arguments, following "/e", separated by "/"
             Args = Split(ExcelMakroArg, argSep)
-            ArgPos = FlagPresent(argStart & argSep & ExcelMakroArg, CmdLineArgs, True)
-            ' /e/START|STARTINT/invokedMacro/arg1        /arg2   /arg3  ....
-            ' /e/STARTEXT      /containedWB /invokedMacro/arg1   /arg2  ....
-            ' / /Args(0)       /Args(1)     /Args(2)     /Args(3)/Args(4) ..
+            ' /e/START    /invokedMacro/arg1        /arg2   /arg3  ....
+            ' /e/STARTEXT /containedWB /invokedMacro/arg1   /arg2  ....
+            ' / /Args(0)  /Args(1)     /Args(2)     /Args(3)/Args(4) ..
             If UBound(Args) >= 1 Then
-                If UCase$(Args(0)) = "START" Or UCase$(Args(0)) = "STARTEXT" Or UCase$(Args(0)) = "STARTINT" Then
-                    CallingWB = vbNullString
-                    ' CmdCaller is calling workbook
-                    CmdCaller = CmdLineArgs(ArgPos - 1)
+                If UCase$(Args(0)) = "START" Or UCase$(Args(0)) = "STARTEXT" Then
+                    ' CmdCaller is calling workbook (second Cmdline argument, first is Excel itself)
+                    CmdCaller = CmdLineArgs(1)
+                    aLogger.LogToEventViewer("ExcelMakroArg: " & ExcelMakroArg & ",Args(0):" & Args(0) & ",Args(1):" & Args(1), EventLogEntryType.Information)
 
-                    If UCase$(Args(0)) = "START" Then ' called sub within calling workbook:
-                        CallingWB = "'" & CmdCaller & "'!"
-                    ElseIf UCase$(Args(0)) = "STARTEXT" Then ' called sub outside of calling workbook:
-                        ' If we have a full path in args(1) then use it, however caller must provide also correct excel calling convention: '<FullPath>\File.xlsm'!Macro
+                    If UCase$(Args(0)) = "START" Then ' called sub within calling workbook or loaded addins: Start
+                        If InStr(1, Args(1), "!") = 0 Then CallingWB = "'" & CmdCaller & "'!"
+                    Else ' called sub outside of calling workbook or loaded addins/workbooks: StartExt
+                        ' If we have a full path in Args(1) then use it, however caller must provide also correct excel calling convention: '<FullPath>\File.xlsm'!Macro
                         If InStr(1, Args(1), "\") = 0 Then
-                            ' no full path: take from CmdCaller (invoker of getArguments in Workbook_Open)
+                            ' no full path: take from CmdCaller
                             Args(1) = Replace(Args(1), "!", "'!")
-                            ' If we have a full path in CmdCaller then use it, given workbook/addin in args(1) assumed to be in same directory
-                            If InStr(1, CmdCaller, "\") Then
+                            ' If we have a full path in CmdCaller then use it, given workbook/addin in Args(1) assumed to be in same directory
+                            If InStr(1, CmdCaller, "\") > 0 Then
                                 CallingWB = "'" & Trim$(Mid$(CmdCaller, 1, InStrRev(CmdCaller, "\")))
                                 ' no path, rely on CurrentDirectory
                             Else
                                 CallingWB = "'" & FileIO.FileSystem.CurrentDirectory() & "\"
                             End If
                         End If
-                    Else
-                        ' in case of STARTINT, either rely on called proc already having been loaded (Workbook/Addin in XLSTART) or invokedMacro is given with full path ('<FullPath>\File.xlsm'!Macro ; CallingWB is empty !)
                     End If
                     Select Case UBound(Args)
                         Case 1 : aLogger.LogToEventViewer("Calling: " & CallingWB & Args(1), EventLogEntryType.Information)
@@ -45,6 +47,8 @@ Module CmdLineFetcher
                         Case 3 : aLogger.LogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3), EventLogEntryType.Information)
                         Case 4 : aLogger.LogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3) & "," & Args(4), EventLogEntryType.Information)
                     End Select
+                    ' prohibit Argument fetching during opening workbooks when App.Run Macro is loaded
+                    ArgsProhibited = True
                     Select Case UBound(Args)
                         Case 1 : theHostApp.Run(CallingWB & Args(1))
                         Case 2 : theHostApp.Run(CallingWB & Args(1), Args(2))
@@ -77,20 +81,23 @@ Module CmdLineFetcher
                         Case 29 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26), Args(27), Args(28), Args(29))
                         Case 30 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26), Args(27), Args(28), Args(29), Args(30))
                     End Select
+                    ArgsProhibited = False
+                    StartMakroDone = True
                 End If
             End If
-            StartMakroDone = True
         Catch ex As Exception
-            aLogger.LogToEventViewer("Error: " & Err.Description & " in Fetcher.getArguments, " & Erl() & ",CallingWB: " & CallingWB & ",CmdCaller: " & CmdCaller,, True)
+            ArgsProhibited = False
+            aLogger.LogToEventViewer("Error: " & ex.Message & " in Fetcher.getArguments, CallingWB: " & CallingWB & ",CmdCaller: " & CmdCaller, EventLogEntryType.Error, True)
         End Try
     End Sub
 
+    ''' <summary>scans the argument list, looking for one that starts with the passed flag. If it's found, and the passed flag is the entire argument, the following
+    ''' argument is returned. If the passed flag isn't the entire argument, the portion following the flag is returned.</summary>
+    ''' <param name="Flag"></param>
+    ''' <param name="Arguments"></param>
+    ''' <param name="CaseSensitive"></param>
+    ''' <returns></returns>
     Public Function FlaggedArg(ByVal Flag As String, Arguments() As String, CaseSensitive As Boolean) As String
-        ' This function will scan the argument list, looking for
-        ' one that starts with the passed flag. If it's found, and
-        ' the passed flag is the entire argument, the following
-        ' argument is returned. If the passed flag isn't the entire
-        ' argument, the portion following the flag is returned.
         Dim i As Long
         Dim sRet As String = ""
         Dim CompareFlag As CompareMethod
@@ -128,9 +135,12 @@ Module CmdLineFetcher
         FlaggedArg = sRet
     End Function
 
+    ''' <summary>scans the argument list, looking for the passed flag, returns resulting position.</summary>
+    ''' <param name="Flag"></param>
+    ''' <param name="Arguments"></param>
+    ''' <param name="CaseSensitive"></param>
+    ''' <returns>position of argument</returns>
     Public Function FlagPresent(ByVal Flag As String, Arguments() As String, CaseSensitive As Boolean) As Long
-        ' This function simply scans the argument list,
-        ' looking for the passed flag, returns result.
         Dim i As Long
         Dim CompareFlag As CompareMethod
 
@@ -151,4 +161,5 @@ Module CmdLineFetcher
             End If
         Next i
     End Function
+
 End Module
