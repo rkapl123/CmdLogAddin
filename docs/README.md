@@ -49,12 +49,11 @@ and initialise this object using the setProperties Method (all arguments are opt
     [logPathMsg]  
     [MailGreetings]  
 * overrideCommonCaller .. whether to override CallingObjectName (filename to log to) with theCaller
-* doMirrorToStdOut .. whether to mirror log messages to the standard output of the invoking cmd session
 
 Example:  
-`theLogger.setProperties ThisWorkbook, theEnv:=env, theLoglevel:=8, theLogFilePath:="Logs", theMailRecipients:="admin@somewhere.com", doMirrorToStdOut:=True`
+`theLogger.setProperties ThisWorkbook, theEnv:=env, theLoglevel:=8, theLogFilePath:="Logs", theMailRecipients:="admin@somewhere.com"`
 
-Log messages are written by using methods LogError, LogWarn, LogInfo, LogDebug and LogFatal (ends execution of caller):  
+Log messages are written by using methods LogError, LogWarn, LogInfo, LogDebug and LogFatal (ends excel application):  
 `theLogger.LogError "testLog logging error"`  
 `theLogger.LogWarn "testLog logging warning"`  
 `theLogger.LogInfo "testLog logging info"`  
@@ -71,10 +70,7 @@ Caller settings can also be changed within the active session:
 
 Default Values are taken from the registry, located in `[HKCU\Software\VB and VBA Program Settings\LogAddin\Settings]`:  
 
-Send message using the local SMTP service pickup directory or port.  
-`"cdoSendUsingPickupOrPort"=2`
-
-Is Authentication required, then need below 5 settings otherwise do not authenticate  
+Is Authentication required, then we need below 5 settings, otherwise do not authenticate  
 `"cdoAuthentRequired"="False"`
 
 UserID/Password for SMTP Authentication, if required  
@@ -84,14 +80,14 @@ UserID/Password for SMTP Authentication, if required
 SSL Authentication used?  
 `"cdoUseSSL"="False"`
 
-Maximum time to try to establish a connection to the SMTP server  
-`"cdoConnectiontimeout"=60`
+Maximum time to try to establish a connection to the SMTP server in seconds  
+`"cdoConnectiontimeout"="60"`
 
 SMTP Servername  
 `"cdoServerName"="YourSMTPServerName"`
 
-Usually SMTP Serverport 25  
-`"cdoServerPort"=25`
+SMTP Serverport (default unsecure: 25)  
+`"cdoServerPort"="25"`
 
 In case of internal errors or problesm with settings, try to send to this  
 `"cdoInternalErrMailRcpt"="MAIL-address1@domain, MAIL-address2@domain"`
