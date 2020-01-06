@@ -1,16 +1,17 @@
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports Microsoft.Office.Interop
+Imports ExcelDna.ComInterop
+Imports ExcelDna.Integration
 
 ''' <summary>main class to be used in clients: set theLogger = createObject("LogAddin.Logger")
-'''          doing logging with LogError, LogWarn, LogInfo, LogDebug and LogStream
+'''          doing logging with LogError, LogWarn, LogInfo, LogDebug and LogFatal
 '''          Logger properties are set with setProperties.
 ''' </summary>
 <ComVisible(True)>
 <ClassInterface(ClassInterfaceType.AutoDispatch)>
 <ProgId("LogAddin.Logger")>
 Public Class Logger
-
     <DllImport("kernel32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
     Public Shared Function AttachConsole(dwProcessId As Integer) As Boolean
 
@@ -56,7 +57,7 @@ Public Class Logger
         cdoUserID = fetchSetting("cdoUserID", "")
         cdoPassword = fetchSetting("cdoPassword", "")
         cdoUseSSL = CBool(fetchSetting("cdoUseSSL", False))
-        cdoConnectiontimeout = CInt(fetchSetting("cdoConnectiontimeout", 60))
+        cdoConnectiontimeout = CInt(fetchSetting("cdoConnectiontimeout", 0))
         cdoAuthentRequired = CBool(fetchSetting("cdoAuthentRequired", False))
         cdoServerName = fetchSetting("cdoServerName", "YOURSMTPSERVERNAME")    'Name or IP of Remote SMTP Server
         cdoServerPort = CInt(fetchSetting("cdoServerPort", 25))               'Server port (typically 25)
@@ -77,6 +78,7 @@ Public Class Logger
             i += 1
             entry = fetchSetting("logentry" & i, vbNullString)
         End While
+        If i = 0 Then MsgBox("No logentry defined in registry settings !")
         mirrorToStdOut = False
     End Sub
 
@@ -106,7 +108,7 @@ Public Class Logger
     ''' [logPathMsg]
     ''' [MailGreetings]</param>
     ''' <param name="overrideCommonCaller">whether to override CallingObjectName (filename to log to) with theCaller</param>
-    ''' <param name="doMirrorToStdOut">whether to mirror log messages to the standard output (requires cscript execution of scripts) or a separate debug window (VB/VBA/WSCRIPT !)</param>
+    ''' <param name="doMirrorToStdOut">obsolete parameter, left for backward compatibility</param>
     Public Sub setProperties(Optional theCallingObject As Excel.Workbook = Nothing, Optional theLogLevel As Integer = 4, Optional theLogFilePath As String = Nothing,
         Optional theEnv As String = Nothing, Optional theCaller As String = Nothing, Optional theMailRecipients As String = Nothing,
         Optional theSubject As String = Nothing, Optional writeToEventLog As Boolean = False, Optional theSender As String = Nothing, Optional theMailIntro As String = Nothing,
@@ -134,8 +136,8 @@ Public Class Logger
                "   <logLine>" & vbCrLf &
                "   <logPathMsg>" & vbCrLf &
                "   <MailGreetings>" & vbCrLf &
-               " - overrideCommonCaller .. override CallingObjectName (filename to log to) with given parameter theCaller (true)" & vbCrLf &
-               " - doMirrorToStdOut .. mirror log messages to the standard output (true)", MsgBoxStyle.Critical + MsgBoxStyle.OkOnly, "Logger.setProperties")
+               " - overrideCommonCaller .. override CallingObjectName (filename to log to) with given parameter theCaller (true)",
+                   MsgBoxStyle.Critical + MsgBoxStyle.OkOnly, "Logger.setProperties")
             Exit Sub
         End If
         On Error Resume Next
@@ -167,9 +169,6 @@ Public Class Logger
 20:     If Not (IsNothing(theMailIntro)) Then MailIntro = theMailIntro
 21:     If Not (IsNothing(theMailGreetings)) Then MailGreetings = theMailGreetings
 22:     If overrideCommonCaller Then commonCaller = theCaller
-23:     mirrorToStdOut = doMirrorToStdOut
-        ' -1 is parent process of current process (excel) -> cmd console starting excel
-24:     If doMirrorToStdOut Then AttachConsole(-1)
         Exit Sub
 
 setProperties_Err:
@@ -191,7 +190,7 @@ setProperties_Err:
         Dim i As Integer
 2:      For i = 0 To UBound(logentry)
 3:          If LCase$(logentry(i)) = "timestamp" Then FileMessage = FileMessage & timestamp & vbTab
-4:          If LCase$(logentry(i)) = "loglevel" Then FileMessage = FileMessage & Choose(LogPrio, "ERROR", "WARN", "", "INFO", "", "", "", "DEBUG") & vbTab
+4:          If LCase$(logentry(i)) = "loglevel" Then FileMessage = FileMessage & Choose(LogPrio, "ERROR", "WARN", "", "INFO", "", "", "", "DEBUG", "", "", "", "", "", "", "", "FATAL") & vbTab
 5:          If LCase$(logentry(i)) = "caller" Then FileMessage = FileMessage & "file://" & Replace(callerFullPath, " ", "%20") & vbTab
 6:          If Left$(LCase$(logentry(i)), 2) = "e:" Then FileMessage = FileMessage & Environ$(Mid$(logentry(i), 3)) & vbTab
 7:          If LCase$(logentry(i)) = "logmessage" Then FileMessage = FileMessage & LogMessage & vbTab
@@ -215,13 +214,22 @@ LogWrite_Err:
         LogToEventViewer(IIf(doEventLog, "", "trying to Log to file: " & theLogFileStr) & ", Error: " & Err.Description & ", line " & Erl() & " in Logger.LogWrite")
     End Sub
 
-    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in funtion name) depending on log level set</summary>
+    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in function name) and ends Excel</summary>
+    ''' <param name="LogMessage"></param>
+    Public Sub LogFatal(LogMessage As String)
+        LogWrite(LogMessage, EventLogEntryType.FailureAudit)
+        ExcelAsyncUtil.QueueAsMacro(Sub()
+                                        QuitApp()
+                                    End Sub)
+    End Sub
+
+    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in function name)</summary>
     ''' <param name="LogMessage"></param>
     Public Sub LogError(LogMessage As String)
         LogWrite(LogMessage, EventLogEntryType.Error)
     End Sub
 
-    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in funtion name) depending on log level set</summary>
+    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in function name) depending on log level set</summary>
     ''' <param name="LogMessage"></param>
     Public Sub LogWarn(LogMessage As String)
         If LogLevel >= EventLogEntryType.Warning Then
@@ -229,7 +237,7 @@ LogWrite_Err:
         End If
     End Sub
 
-    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in funtion name) depending on log level set</summary>
+    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in function name) depending on log level set</summary>
     ''' <param name="LogMessage"></param>
     Public Sub LogInfo(LogMessage As String)
         If LogLevel >= EventLogEntryType.Information Then
@@ -237,20 +245,12 @@ LogWrite_Err:
         End If
     End Sub
 
-    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in funtion name) depending on log level set</summary>
+    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in function name) depending on log level set</summary>
     ''' <param name="LogMessage"></param>
     Public Sub LogDebug(LogMessage As String)
         If LogLevel >= EventLogEntryType.SuccessAudit Then
             LogWrite(LogMessage, EventLogEntryType.SuccessAudit)
         End If
-    End Sub
-
-    ''' <summary>writes the log message LogMessage having appropriate priority (as shown in funtion name) depending on log level set and ends Excel</summary>
-    ''' <param name="LogMessage"></param>
-    Public Sub LogFatal(LogMessage As String)
-        LogError(LogMessage)
-        callingObject.Parent.DisplayAlerts = False
-        callingObject.Parent.Quit
     End Sub
 
     ''' <summary>Logs sErrMsg of eEventType in eCategory to EventLog</summary>
@@ -292,7 +292,7 @@ LogWrite_Err:
         Dim client As System.Net.Mail.SmtpClient = New System.Net.Mail.SmtpClient(cdoServerName, cdoServerPort)
         ' Add credentials if the SMTP server requires them.
         Try
-            client.Timeout = cdoConnectiontimeout
+            If cdoConnectiontimeout > 0 Then client.Timeout = cdoConnectiontimeout * 1000
             client.Credentials = System.Net.CredentialCache.DefaultNetworkCredentials
             client.Send(objMessage)
         Catch ex As Exception
@@ -302,7 +302,7 @@ LogWrite_Err:
                 If cdoAuthentRequired Then client.Credentials = New System.Net.NetworkCredential(cdoUserID, cdoPassword)
                 client.Send(objMessage)
             Catch ex1 As Exception
-                LogToEventViewer("Error: " & ex1.Message & " in Logger.sendMail; mailRecipients: " & mailRecipients & ",defaultSender: " & defaultSender & ",Sender: " & Sender & "objMessage.From: " & FromAddr)
+                LogToEventViewer("Error: " & ex1.Message & " in Logger.sendMail; mailRecipients: " & mailRecipients & ",defaultSender: " & defaultSender & ",Sender: " & Sender & ",FromAddr: " & FromAddr)
             End Try
         End Try
         AlreadySent = True

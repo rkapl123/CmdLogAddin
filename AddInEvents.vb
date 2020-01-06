@@ -2,9 +2,10 @@
 Imports ExcelDna.Integration
 Imports System.Diagnostics
 Imports System.Runtime.InteropServices
+Imports ExcelDna.ComInterop
 
-''' <summary>AddIn Connection class, also handling Events from Excel (Open, Close, Activate)</summary>
-<ComVisible(True)>
+''' <summary>AddIn Connection class, handling Open/Close Events from Addin</summary>
+<ComVisible(False)>
 Public Class AddInEvents
     Implements IExcelAddIn
 
@@ -13,21 +14,19 @@ Public Class AddInEvents
 
     ''' <summary>connect to Excel when opening Addin</summary>
     Public Sub AutoOpen() Implements IExcelAddIn.AutoOpen
+        ComServer.DllRegisterServer()
         Application = ExcelDnaUtil.Application
-        theHostApp = ExcelDnaUtil.Application
-        Trace.Listeners.Add(New ExcelDna.Logging.LogDisplayTraceListener())
-        aLogger = New Logger()
     End Sub
 
     ''' <summary>AutoClose cleans up after finishing addin</summary>
     Public Sub AutoClose() Implements IExcelAddIn.AutoClose
         Try
-            theHostApp = Nothing
+            Application = Nothing
+            ComServer.DllUnregisterServer()
         Catch ex As Exception
-            aLogger.LogToEventViewer("DBAddin unloading error: " + ex.Message)
+            MsgBox("DBAddin unloading error: " + ex.Message)
         End Try
     End Sub
-
 
     ''' <summary>open workbook: check get Arguments and start a Macro</summary>
     ''' <param name="Wb">opened workbook</param>

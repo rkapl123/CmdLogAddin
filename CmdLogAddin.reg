@@ -1,0 +1,51 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\VB and VBA Program Settings\LogAddin]
+
+[-HKEY_CURRENT_USER\Software\VB and VBA Program Settings\LogAddin\Settings]
+
+[HKEY_CURRENT_USER\Software\VB and VBA Program Settings\LogAddin\Settings]
+"cdoUserID"=""
+"cdoPassword"=""
+"cdoUseSSL"="False"
+"cdoConnectiontimeout"="60"
+"cdoAuthentRequired"="False"
+"cdoServerName"="yourSMTPServer"
+"cdoServerPort"="25"
+"cdoInternalErrMailRcpt"="internalErrorMailRecipients@yourdomain.com"
+"defaultSubject"="Batch Process Error"
+"defaultSender"="Administrator@yourdomain.com"
+"defaultMailIntro"="Following Error occured: "
+"defaultMailGreetings"="regards, your log-addin"
+"timeStampFormat"="dd.MM.yyyy HH:mm:ss"
+"logentry0"="timestamp"
+"logentry1"="loglevel"
+"logentry2"="caller"
+"logentry3"="e:USERNAME"
+"logentry4"="logmessage"
+
+[HKEY_USERS\.DEFAULT\Software\VB and VBA Program Settings\LogAddin]
+
+
+[-HKEY_USERS\.DEFAULT\Software\VB and VBA Program Settings\LogAddin\Settings]
+
+[HKEY_USERS\.DEFAULT\Software\VB and VBA Program Settings\LogAddin\Settings]
+"cdoUserID"=""
+"cdoPassword"=""
+"cdoUseSSL"="False"
+"cdoConnectiontimeout"="60"
+"cdoAuthentRequired"="False"
+"cdoServerName"="yourSMTPServer"
+"cdoServerPort"="25"
+"cdoInternalErrMailRcpt"="internalErrorMailRecipients@yourdomain.com"
+"defaultSubject"="Batch Process Error"
+"defaultSender"="Administrator@yourdomain.com"
+"defaultMailIntro"="Following Error occured: "
+"defaultMailGreetings"="regards, your log-addin"
+"timeStampFormat"="dd.MM.yyyy HH:mm:ss"
+"logentry0"="timestamp"
+"logentry1"="loglevel"
+"logentry2"="caller"
+"logentry3"="e:USERNAME"
+"logentry4"="logmessage"
+

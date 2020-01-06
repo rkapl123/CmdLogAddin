@@ -1,4 +1,8 @@
+Imports System.Runtime.InteropServices
+Imports ExcelDna.Integration
+
 ''' <summary>All procedures for fetching from the command line of excel and starting a given macro</summary>
+<ComVisible(False)>
 Module CmdLineFetcher
 
     ''' <summary>get excel arguments from command line of excel and start the macro given after Start or StartExt</summary>
@@ -8,6 +12,8 @@ Module CmdLineFetcher
         Dim CmdCaller As String = "", CallingWB As String = ""
         Dim Args As Object
         Dim CmdLineArgs() As String
+        ' get the host app object afresh to avoid dangling references to excel application, prohibiting quit
+        Dim theHostApp As Object = ExcelDnaUtil.Application
 
         Try
             ' get Array of CmdLine Arguments
@@ -23,7 +29,7 @@ Module CmdLineFetcher
                 If UCase$(Args(0)) = "START" Or UCase$(Args(0)) = "STARTEXT" Then
                     ' CmdCaller is calling workbook (second Cmdline argument, first is Excel itself)
                     CmdCaller = CmdLineArgs(1)
-                    aLogger.LogToEventViewer("ExcelMakroArg: " & ExcelMakroArg & ",Args(0):" & Args(0) & ",Args(1):" & Args(1), EventLogEntryType.Information)
+                    LogToEventViewer("ExcelMakroArg: " & ExcelMakroArg & ",Args(0):" & Args(0) & ",Args(1):" & Args(1), EventLogEntryType.Information)
 
                     If UCase$(Args(0)) = "START" Then ' called sub within calling workbook or loaded addins: Start
                         If InStr(1, Args(1), "!") = 0 Then CallingWB = "'" & CmdCaller & "'!"
@@ -42,10 +48,10 @@ Module CmdLineFetcher
                         End If
                     End If
                     Select Case UBound(Args)
-                        Case 1 : aLogger.LogToEventViewer("Calling: " & CallingWB & Args(1), EventLogEntryType.Information)
-                        Case 2 : aLogger.LogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2), EventLogEntryType.Information)
-                        Case 3 : aLogger.LogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3), EventLogEntryType.Information)
-                        Case 4 : aLogger.LogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3) & "," & Args(4), EventLogEntryType.Information)
+                        Case 1 : LogToEventViewer("Calling: " & CallingWB & Args(1), EventLogEntryType.Information)
+                        Case 2 : LogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2), EventLogEntryType.Information)
+                        Case 3 : LogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3), EventLogEntryType.Information)
+                        Case 4 : LogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3) & "," & Args(4), EventLogEntryType.Information)
                     End Select
                     ' prohibit Argument fetching during opening workbooks when App.Run Macro is loaded
                     ArgsProhibited = True
@@ -87,7 +93,7 @@ Module CmdLineFetcher
             End If
         Catch ex As Exception
             ArgsProhibited = False
-            aLogger.LogToEventViewer("Error: " & ex.Message & " in Fetcher.getArguments, CallingWB: " & CallingWB & ",CmdCaller: " & CmdCaller, EventLogEntryType.Error, True)
+            LogToEventViewer("Error: " & ex.Message & " in Fetcher.getArguments, CallingWB: " & CallingWB & ",CmdCaller: " & CmdCaller, EventLogEntryType.Error)
         End Try
     End Sub
 
@@ -161,5 +167,14 @@ Module CmdLineFetcher
             End If
         Next i
     End Function
+
+    ''' <summary>Logs sErrMsg of eEventType in eCategory to EventLog</summary>
+    ''' <param name="sErrMsg"></param>
+    ''' <param name="eEventType"></param>
+    Private Sub LogToEventViewer(sErrMsg As String, Optional eEventType As EventLogEntryType = EventLogEntryType.Error)
+        Dim eventLog As EventLog = New EventLog("Application")
+        ' .Net Runtime is always there if .Net is installed
+        EventLog.WriteEntry(".NET Runtime", sErrMsg, eEventType, 1000)
+    End Sub
 
 End Module
