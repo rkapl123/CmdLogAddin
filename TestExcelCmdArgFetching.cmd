@@ -1,6 +1,10 @@
-if "%1" == "64" (
+mkdir Test
+@echo off
+if exist "C:\Program Files\Microsoft Office\root\Office16" (
+	echo 64bit office
 	set excelexe="C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE"
 ) else (
+	echo 32bit office
 	set excelexe="C:\Program Files (x86)\Microsoft Office\Office14\EXCEL.EXE"
 )
 rem start excel procedure testsub
