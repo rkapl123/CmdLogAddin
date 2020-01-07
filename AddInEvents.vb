@@ -1,6 +1,5 @@
 ﻿Imports Microsoft.Office.Interop
 Imports ExcelDna.Integration
-Imports System.Diagnostics
 Imports System.Runtime.InteropServices
 Imports ExcelDna.ComInterop
 

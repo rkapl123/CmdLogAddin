@@ -223,6 +223,11 @@ LogWrite_Err:
                                     End Sub)
     End Sub
 
+    Private Sub QuitApp()
+        ExcelDnaUtil.Application.DisplayAlerts = False
+        ExcelDnaUtil.Application.Quit()
+    End Sub
+
     ''' <summary>writes the log message LogMessage having appropriate priority (as shown in function name)</summary>
     ''' <param name="LogMessage"></param>
     Public Sub LogError(LogMessage As String)

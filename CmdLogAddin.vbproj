@@ -90,7 +90,6 @@
   <ItemGroup>
     <Compile Include="AddInEvents.vb" />
     <Compile Include="CmdLineFetcher.vb" />
-    <Compile Include="Globals.vb" />
     <Compile Include="Logger.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">

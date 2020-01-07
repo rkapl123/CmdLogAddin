@@ -4,6 +4,8 @@ Imports ExcelDna.Integration
 ''' <summary>All procedures for fetching from the command line of excel and starting a given macro</summary>
 <ComVisible(False)>
 Module CmdLineFetcher
+    Public StartMakroDone As Boolean = False
+    Public ArgsProhibited As Boolean = False ' prohibit Argument fetching during opening workbooks when App.Run Macro is loaded
 
     ''' <summary>get excel arguments from command line of excel and start the macro given after Start or StartExt</summary>
     ''' <param name="argStart">argument starting portion to scan for ("/e" is the most harmless choice for excel)</param>
