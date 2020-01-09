@@ -10,7 +10,7 @@ if exist "C:\Program Files\Microsoft Office\root\Office16" (
 rem start excel procedure testsub
 %excelexe% TestExcelCmdArgFetching.xls /e/start/testsub/arg1/arg2/arg3
 rem start excel external procedure with loaded addin
-%excelexe% TestExcelCmdArgFetching.xls /e/start/OebfaBar.xla!LogoDeutsch
+%excelexe% TestExcelCmdArgFetching.xls /e/start/TestExcelAddin.xlam!testsub/passedArg
 rem start excel external procedure with external workbook
 %excelexe% TestExcelCmdArgFetching.xls /e/startExt/TestExcelCmdArgFetchingExt.xls!testMacro
 rem start excel external procedure with external workbook having absolute path
