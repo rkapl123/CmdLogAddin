@@ -12,10 +12,8 @@ In starting command:
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" TestExcelCmdArgFetching.xls /e/arg1/arg2/arg3`
 * start excel procedure testsub in TestExcelCmdArgFetching.xls with arguments arg1, arg2, arg3  
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r TestExcelCmdArgFetching.xls /e/start/testsub/arg1/arg2/arg3`
-* start "internal" excel procedure start which is already loaded in excel (TestStart.xla already loaded, if necessary move TestStart.xla into XLSTART folder)  
-`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r TestExcelCmdArgFetching.xls /e/start/TestStart.xla!start`
-* start excel external procedure "start" (Workbook in same directory as TestExcelCmdArgFetching.xls, assumed to be current directory (has to be set before calling getArguments())  
-`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r TestExcelCmdArgFetching.xls /e/startExt/Test.xla!start`
+* start "internal" excel procedure start which is already loaded in excel (TestExcelAddin.xlam assumed to be loaded at startup, if necessary move xlam into XLSTART folder)  
+`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r TestExcelCmdArgFetching.xls /e/start/TestExcelAddin.xlam!start`
 * start excel external procedure (Workbook in same directory as TestExcelCmdArgFetching.xls)  
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" %~dp0TestExcelCmdArgFetching.xls /e/startExt/Test.xla!start`
 * start excel external procedure (Workbook in same directory as TestExcelCmdArgFetching.xls) with argument arg1  
@@ -70,7 +68,7 @@ Caller settings can also be changed within the active session:
 
 Default Values are taken from the registry, located in `[HKCU\Software\VB and VBA Program Settings\LogAddin\Settings]`:  
 
-Is Authentication required, then we need below 5 settings, otherwise do not authenticate  
+Is Authentication required, then we need below 3 settings, otherwise do not authenticate  
 `"cdoAuthentRequired"="False"`
 
 UserID/Password for SMTP Authentication, if required  
