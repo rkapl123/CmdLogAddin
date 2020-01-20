@@ -275,7 +275,17 @@ Class Logger
 		mb.Close
 		set mb = Nothing
 		set fsm = Nothing
-		mailCmd = curPath & "\mailsend-go.exe -smtp " & cdoServerName & " -port " & cdoServerPort & " -log " & curPath & "\mailsend-go.log auth -user " & cdoUserID & " -pass """ & cdoPassword & """ -f " & IIf(LenB(Sender) = 0, defaultSender, Sender) & " -to " & mailRecipients & " -sub """ & IIf(LenB(Subject) = 0, defaultSubject, Subject) & """ body -file " & curPath & "\mailbody.txt"
+		mailCmd = fetchSetting("mailCmd", "")
+		mailCmd = replace(mailCmd, "<serverName>", cdoServerName)
+		mailCmd = replace(mailCmd, "<serverPort>", cdoServerPort)
+		mailCmd = replace(mailCmd, "<userID>", cdoUserID)
+		mailCmd = replace(mailCmd, "<passwd>", cdoPassword)
+		mailCmd = replace(mailCmd, "<curPath>", curPath)
+		mailCmd = replace(mailCmd, "<fromAddr>", IIf(LenB(Sender) = 0, defaultSender, Sender))
+		mailCmd = replace(mailCmd, "<toAddr>", mailRecipients)
+		mailCmd = replace(mailCmd, "<subject>", IIf(LenB(Subject) = 0, defaultSubject, Subject))
+		mailCmd = replace(mailCmd, "<useSSL>", iif(cdoUseSSL, "-ssl", ""))
+		wscript.echo mailCmd
 		strErrorCode = shell.Run(mailCmd, 0, True)
 		if strErrorCode <> 0 Then LogToIntEventViewer "Error after sending Mail with mailsend-go.exe. errorcode:" & strErrorCode
 		AlreadySent = True
