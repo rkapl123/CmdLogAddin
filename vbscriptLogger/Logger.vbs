@@ -1,5 +1,5 @@
 ' add logger with:
-' loggerHome = "O:\SOFTWARE\BatchScripts\"
+' loggerHome = "place\where\Logger.vbs\is\located"
 ' ExecuteGlobal CreateObject("Scripting.FileSystemObject").OpenTextFile(loggerHome & "Logger.vbs", 1).ReadAll
 ' theLogger.setProperties theCallingObject = Wscript, theLogLevel = 4, theLogFilePath, theEnv, theCaller, theMailRecipients, theSubject, writeToEventLog, theSender, theMailIntro, theMailGreetings, overrideCommonCaller, doMirrorToStdOut
 
@@ -103,11 +103,11 @@ Class Logger
 	' sets properties for the Logger object, all parameters optional !
 	' theCallingObject .. the calling script host (kept for compatibility reasons, defaults to current script host)
 	' theLogLevel .. (ERROR 1,  WARN 2, INFO 4, DEBUG 8), default = 4
-	' theLogFilePath .. where to write the logfile (LogFilePath), defaults to callingObject's path
+	' theLogFilePath .. where to write the logfile (LogFilePath), defaults to calling script's path
 	' theEnv .. environment, empty if production, used to append env to LogFilePath for test/other environments
 	' theCaller .. if caller is not the callingObject (commonCaller) then this can be used to
-	'               identify the active caller (in case of an addin handling multiple workbooks/documents/..).
-	'               Can include the full path to the calling workbook/document/..,
+	'               identify the active caller (in case of a script library handling other scripts ..).
+	'               Can include the full path to the calling script..,
 	'               the Caller's name will be extracted by using last "\" as separator
 	' theMailRecipients .. comma separated list of the error mail recipients
 	' theSubject .. the error mail's subject
@@ -287,7 +287,7 @@ Class Logger
 		mailCmd = replace(mailCmd, "<useSSL>", iif(cdoUseSSL, "-ssl", ""))
 		wscript.echo mailCmd
 		strErrorCode = shell.Run(mailCmd, 0, True)
-		if strErrorCode <> 0 Then LogToIntEventViewer "Error after sending Mail with mailsend-go.exe. errorcode:" & strErrorCode
+		if strErrorCode <> 0 Then LogToIntEventViewer "Error after sending Mail with defined mailCmd: " & mailCmd & ". errorcode:" & strErrorCode
 		AlreadySent = True
 	End Sub
 

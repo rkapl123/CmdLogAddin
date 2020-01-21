@@ -1,17 +1,18 @@
-' create the logger, and provide init arguments...
+' create the logger ...
 ExecuteGlobal CreateObject("Scripting.FileSystemObject").OpenTextFile("Logger.vbs", 1).ReadAll
 If InStr(1, Wscript.ScriptFullName, "Test") > 0 Then env = "Test"
 env = ""
 
-'init logging
+' ... and init logging
+'
 ' theCallingObject .. the calling object (excel workbook, word document, access project, etc..), 
 '          must have a "Name" and "Path" property and a "Quit" method (to allow LogFatal to end it)...
 ' theLogLevel ..  (ERROR 1,  WARN 2, INFO 4, DEBUG 8), default = 4
-' theLogFilePath .. where to write the logfile (LogFilePath), defaults to callingObject's path
+' theLogFilePath .. where to write the logfile (LogFilePath), defaults to calling script's path
 ' theEnv .. environment, empty if production, used to append env to LogFilePath for test/other environments
 ' theCaller .. if caller is not the callingObject (commonCaller) then this can be used to
-'               identify the active caller (in case of an addin handling multiple workbooks/documents/..).
-'               Can include the full path to the calling workbook/document/..,
+'               identify the active caller (in case of a script library handling other scripts ..).
+'               Can include the full path to the calling script..,
 '               the Caller's name will be extracted by using last "\" as separator
 ' theMailRecipients .. comma separated list of the error mail recipients
 ' theSubject .. the error mail's subject
