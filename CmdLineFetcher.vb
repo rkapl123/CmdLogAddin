@@ -1,6 +1,7 @@
 Imports System.Runtime.InteropServices
 Imports ExcelDna.Integration
 
+
 ''' <summary>All procedures for fetching from the command line of excel and starting a given macro</summary>
 <ComVisible(False)>
 Module CmdLineFetcher

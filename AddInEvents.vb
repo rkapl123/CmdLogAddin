@@ -3,6 +3,7 @@ Imports ExcelDna.Integration
 Imports System.Runtime.InteropServices
 Imports ExcelDna.ComInterop
 
+
 ''' <summary>AddIn Connection class, handling Open/Close Events from Addin</summary>
 <ComVisible(False)>
 Public Class AddInEvents
@@ -23,7 +24,7 @@ Public Class AddInEvents
             Application = Nothing
             ComServer.DllUnregisterServer()
         Catch ex As Exception
-            MsgBox("DBAddin unloading error: " + ex.Message)
+            MsgBox("CmdLogAddin unloading error: " + ex.Message)
         End Try
     End Sub
 

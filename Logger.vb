@@ -1,8 +1,8 @@
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports Microsoft.Office.Interop
-Imports ExcelDna.ComInterop
 Imports ExcelDna.Integration
+
 
 ''' <summary>main class to be used in clients: set theLogger = createObject("LogAddin.Logger")
 '''          doing logging with LogError, LogWarn, LogInfo, LogDebug and LogFatal
