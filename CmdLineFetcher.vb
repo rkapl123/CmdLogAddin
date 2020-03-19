@@ -3,26 +3,27 @@ Imports ExcelDna.Integration
 
 
 ''' <summary>All procedures for fetching from the command line of excel and starting a given macro</summary>
-<ComVisible(False)>
-Module CmdLineFetcher
-    Public StartMakroDone As Boolean = False
+Public Module CmdLineFetcher
+    Public StartMakroDone As Boolean = False ' used in Application_WorkbookOpen to suppress further invocations when opening workbooks
     Public ArgsProhibited As Boolean = False ' prohibit Argument fetching during opening workbooks when App.Run Macro is loaded
+    Public Args As Object
+    Public CmdLineArgs() As String
 
     ''' <summary>get excel arguments from command line of excel and start the macro given after Start or StartExt</summary>
     ''' <param name="argStart">argument starting portion to scan for ("/e" is the most harmless choice for excel)</param>
     ''' <param name="argSep">separator used for further separation of arguments being passed to macro</param>
     Sub getArgumentsAndStartMakro(Optional argStart As String = "/e", Optional argSep As String = "/")
         Dim CmdCaller As String = "", CallingWB As String = ""
-        Dim Args As Object
-        Dim CmdLineArgs() As String
         ' get the host app object afresh to avoid dangling references to excel application, prohibiting quit
         Dim theHostApp As Object = ExcelDnaUtil.Application
 
         Try
             ' get Array of CmdLine Arguments
             CmdLineArgs = Environment.GetCommandLineArgs()
+            If CmdLineArgs.Count > 0 Then LogToEventViewer("CmdLineArgs:" & Join(CmdLineArgs, " "), EventLogEntryType.Information)
             ' get CmdLine Argument starting with argStart ("/e")
             Dim ExcelMakroArg As String = FlaggedArg(argStart, CmdLineArgs, True)
+            If ExcelMakroArg <> "" Then LogToEventViewer("ExcelMakroArg:" & ExcelMakroArg, EventLogEntryType.Information)
             ' get actual passed arguments, following "/e", separated by "/"
             Args = Split(ExcelMakroArg, argSep)
             ' /e/START    /invokedMacro/arg1        /arg2   /arg3  ....
@@ -30,9 +31,11 @@ Module CmdLineFetcher
             ' / /Args(0)  /Args(1)     /Args(2)     /Args(3)/Args(4) ..
             If UBound(Args) >= 1 Then
                 If UCase$(Args(0)) = "START" Or UCase$(Args(0)) = "STARTEXT" Then
-                    ' CmdCaller is calling workbook (second Cmdline argument, first is Excel itself)
+                    ' CmdCaller is (usually) the calling workbook (second Cmdline argument, first is Excel itself)
                     CmdCaller = CmdLineArgs(1)
-                    LogToEventViewer("ExcelMakroArg: " & ExcelMakroArg & ",Args(0):" & Args(0) & ",Args(1):" & Args(1), EventLogEntryType.Information)
+                    ' if second cmdline argument is a switch passed to excel (like /r for readonly) then calling workbook is third cmdline argument
+                    If Left(CmdCaller, 1) = "/" Then CmdCaller = CmdLineArgs(2)
+                    LogToEventViewer("CmdCaller:" & CmdCaller & ",ExcelMakroArg:" & ExcelMakroArg & ",Args(0):" & Args(0) & ",Args(1):" & Args(1), EventLogEntryType.Information)
 
                     If UCase$(Args(0)) = "START" Then ' called sub within calling workbook or loaded addins: Start
                         If InStr(1, Args(1), "!") = 0 Then CallingWB = "'" & CmdCaller & "'!"
@@ -99,6 +102,18 @@ Module CmdLineFetcher
             LogToEventViewer("Error: " & ex.Message & " in Fetcher.getArguments, CallingWB: " & CallingWB & ",CmdCaller: " & CmdCaller, EventLogEntryType.Error)
         End Try
     End Sub
+
+    <ExcelCommand(Name:="getCmdLineArgs")>
+    Public Function getCmdLineArgs() As Object
+        getArgumentsAndStartMakro()
+        Return CmdLineArgs
+    End Function
+
+    <ExcelCommand(Name:="getExcelPassedArgs")>
+    Public Function getExcelPassedArgs() As Object
+        getArgumentsAndStartMakro()
+        Return Args
+    End Function
 
     ''' <summary>scans the argument list, looking for one that starts with the passed flag. If it's found, and the passed flag is the entire argument, the following
     ''' argument is returned. If the passed flag isn't the entire argument, the portion following the flag is returned.</summary>

@@ -1,4 +1,4 @@
-mkdir Test
+mkdir C:\dev\CmdLogAddin\Test
 @echo off
 if exist "C:\Program Files\Microsoft Office\root\Office16" (
 	echo 64bit office
@@ -7,11 +7,13 @@ if exist "C:\Program Files\Microsoft Office\root\Office16" (
 	echo 32bit office
 	set excelexe="C:\Program Files (x86)\Microsoft Office\Office14\EXCEL.EXE"
 )
-rem start excel procedure testsub
+@echo pass args to workbook open
+%excelexe% TestExcelCmdArgFetching.xls /e/arg1/arg2/arg3
+@echo start excel procedure testsub
 %excelexe% TestExcelCmdArgFetching.xls /e/start/testsub/arg1/arg2/arg3
-rem start excel external procedure with loaded addin
+@echo start excel external procedure with loaded addin
 %excelexe% TestExcelCmdArgFetching.xls /e/start/TestExcelAddin.xlam!testsub/passedArg
-rem start excel external procedure with external workbook
+@echo start excel external procedure with external workbook
 %excelexe% TestExcelCmdArgFetching.xls /e/startExt/TestExcelCmdArgFetchingExt.xls!testMacro
-rem start excel external procedure with external workbook having absolute path
+@echo start excel external procedure with external workbook having absolute path
 %excelexe% TestExcelCmdArgFetching.xls /e/startExt/'%~dp0TestExcelCmdArgFetchingExt.xls'!testMacro/passedArgument

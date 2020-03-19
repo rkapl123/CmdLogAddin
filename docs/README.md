@@ -21,6 +21,25 @@ In starting command:
 * start excel external procedure (Workbook in different directory as TestExcelCmdArgFetching.xls)  
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" %~dp0TestExcelCmdArgFetching.xls /e/startExt/'C:\dev\CmdLogAddin\TestExcelCmdArgFetchingExt.xls'!testMacro/arg1`
 
+When using the first (most raw) method to get commandline arguments, you have to call either  
+
+<pre lang="vb.net">
+    CmdlineArgs = Application.Run("getCmdlineArgs")
+    For Each arg In CmdlineArgs
+        MsgBox ("CmdlineArg:" & arg)
+    Next
+</pre>
+to get the excel command line (including excel binary path itself and all switches passed to it), or  
+
+<pre lang="vb.net">
+    ExcelPassedArgs = Application.Run("getExcelPassedArgs")
+    For Each arg In ExcelPassedArgs
+        MsgBox ("ExcelPassedArg:" & arg)
+    Next
+</pre>
+
+to get the specially flagged (/e) excel arguments.
+
 ## Logging
 
 CmdLogAddin provides a logging tool to be used in VBA.  

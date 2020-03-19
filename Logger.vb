@@ -202,7 +202,7 @@ setProperties_Err:
 10:         MailFileLink = "Log in Event Viewer on machine \\" & Environ$("COMPUTERNAME")
         Else
 11:         theLogFileStr = IIf(Left$(LogFilePath, 2) = "\\" Or Mid$(LogFilePath, 2, 2) = ":\", "", callingObjectPath & "\") & LogFilePath & "\" & IIf(Len(env) > 0, env & "\", vbNullString) & commonCaller & ".log"
-12:         Dim outputFile As StreamWriter = New StreamWriter(theLogFileStr, True, System.Text.Encoding.GetEncoding(1252))
+12:         Dim outputFile As StreamWriter = New StreamWriter(theLogFileStr, True, System.Text.Encoding.Default)
 13:         outputFile.WriteLine(FileMessage)
 14:         outputFile.Close() ' close the file
 15:         MailFileLink = "Logfile in file://" & Replace(LogFilePath, " ", "%20") & "\" & IIf(Len(env) > 0, env & "\", vbNullString) & commonCaller & ".log"
@@ -223,6 +223,7 @@ LogWrite_Err:
                                     End Sub)
     End Sub
 
+    ''' <summary>necessary to run in main thread as excel can't quit otherwise</summary>
     Private Sub QuitApp()
         ExcelDnaUtil.Application.DisplayAlerts = False
         ExcelDnaUtil.Application.Quit()

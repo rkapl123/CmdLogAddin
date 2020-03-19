@@ -3,7 +3,7 @@ set source=bin\Debug
 If "%answr%"=="r" (
 	set source=bin\Release
 )
-copy /Y TestExcelAddin.xlam "%appdata%\Microsoft\Excel\XLSTART\"
+copy /Y Test\TestExcelAddin.xlam "%appdata%\Microsoft\Excel\XLSTART\"
 if exist "C:\Program Files\Microsoft Office\root\" (
 	echo 64bit office
 	copy /Y %source%\CmdLogAddin-AddIn64-packed.xll "%appdata%\Microsoft\AddIns\CmdLogAddin.xll"
