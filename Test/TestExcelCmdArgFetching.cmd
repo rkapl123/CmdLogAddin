@@ -1,4 +1,5 @@
-mkdir C:\dev\CmdLogAddin\Test
+rem need to make this folder for logfiles
+mkdir ..\..\Test
 @echo off
 if exist "C:\Program Files\Microsoft Office\root\Office16" (
 	echo 64bit office
