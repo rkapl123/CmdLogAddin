@@ -1,5 +1,5 @@
-Imports System.Runtime.InteropServices
 Imports ExcelDna.Integration
+Imports System.Diagnostics ' needed for EventLogEntryType !!
 
 
 ''' <summary>All procedures for fetching from the command line of excel and starting a given macro</summary>
@@ -12,30 +12,28 @@ Public Module CmdLineFetcher
     ''' <summary>get excel arguments from command line of excel and start the macro given after Start or StartExt</summary>
     ''' <param name="argStart">argument starting portion to scan for ("/e" is the most harmless choice for excel)</param>
     ''' <param name="argSep">separator used for further separation of arguments being passed to macro</param>
-    Sub getArgumentsAndStartMakro(Optional argStart As String = "/e", Optional argSep As String = "/")
+    Sub getArgumentsAndStartMakro(Optional argStart As String = "/e", Optional argSep As String = "/", Optional calledByGetter As Boolean = False, Optional debugInfo As Boolean = False)
         Dim CmdCaller As String = "", CallingWB As String = ""
-        ' get the host app object afresh to avoid dangling references to excel application, prohibiting quit
-        Dim theHostApp As Object = ExcelDnaUtil.Application
 
         Try
             ' get Array of CmdLine Arguments
             CmdLineArgs = Environment.GetCommandLineArgs()
-            If CmdLineArgs.Count > 0 Then LogToEventViewer("CmdLineArgs:" & Join(CmdLineArgs, " "), EventLogEntryType.Information)
+            If CmdLineArgs.Length > 0 And debugInfo Then internalLogToEventViewer("CmdLineArgs:" & Join(CmdLineArgs, " "), EventLogEntryType.Information)
             ' get CmdLine Argument starting with argStart ("/e")
             Dim ExcelMakroArg As String = FlaggedArg(argStart, CmdLineArgs, True)
-            If ExcelMakroArg <> "" Then LogToEventViewer("ExcelMakroArg:" & ExcelMakroArg, EventLogEntryType.Information)
+            If ExcelMakroArg <> "" And debugInfo Then internalLogToEventViewer("ExcelMakroArg:" & ExcelMakroArg, EventLogEntryType.Information)
             ' get actual passed arguments, following "/e", separated by "/"
             Args = Split(ExcelMakroArg, argSep)
             ' /e/START    /invokedMacro/arg1        /arg2   /arg3  ....
             ' /e/STARTEXT /containedWB /invokedMacro/arg1   /arg2  ....
             ' / /Args(0)  /Args(1)     /Args(2)     /Args(3)/Args(4) ..
-            If UBound(Args) >= 1 Then
+            If UBound(Args) >= 1 And Not calledByGetter Then
                 If UCase$(Args(0)) = "START" Or UCase$(Args(0)) = "STARTEXT" Then
                     ' CmdCaller is (usually) the calling workbook (second Cmdline argument, first is Excel itself)
                     CmdCaller = CmdLineArgs(1)
                     ' if second cmdline argument is a switch passed to excel (like /r for readonly) then calling workbook is third cmdline argument
                     If Left(CmdCaller, 1) = "/" Then CmdCaller = CmdLineArgs(2)
-                    LogToEventViewer("CmdCaller:" & CmdCaller & ",ExcelMakroArg:" & ExcelMakroArg & ",Args(0):" & Args(0) & ",Args(1):" & Args(1), EventLogEntryType.Information)
+                    If debugInfo Then internalLogToEventViewer("CmdCaller:" & CmdCaller & ",ExcelMakroArg:" & ExcelMakroArg & ",Args(0):" & Args(0) & ",Args(1):" & Args(1), EventLogEntryType.Information)
 
                     If UCase$(Args(0)) = "START" Then ' called sub within calling workbook or loaded addins: Start
                         If InStr(1, Args(1), "!") = 0 Then CallingWB = "'" & CmdCaller & "'!"
@@ -53,65 +51,73 @@ Public Module CmdLineFetcher
                             End If
                         End If
                     End If
-                    Select Case UBound(Args)
-                        Case 1 : LogToEventViewer("Calling: " & CallingWB & Args(1), EventLogEntryType.Information)
-                        Case 2 : LogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2), EventLogEntryType.Information)
-                        Case 3 : LogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3), EventLogEntryType.Information)
-                        Case 4 : LogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3) & "," & Args(4), EventLogEntryType.Information)
-                    End Select
+                    If debugInfo Then
+                        Select Case UBound(Args)
+                            Case 1 : internalLogToEventViewer("Calling: " & CallingWB & Args(1), EventLogEntryType.Information)
+                            Case 2 : internalLogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2), EventLogEntryType.Information)
+                            Case 3 : internalLogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3), EventLogEntryType.Information)
+                            Case 4 : internalLogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3) & "," & Args(4), EventLogEntryType.Information)
+                        End Select
+                    End If
                     ' prohibit Argument fetching during opening workbooks when App.Run Macro is loaded
                     ArgsProhibited = True
-                    Select Case UBound(Args)
-                        Case 1 : theHostApp.Run(CallingWB & Args(1))
-                        Case 2 : theHostApp.Run(CallingWB & Args(1), Args(2))
-                        Case 3 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3))
-                        Case 4 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4))
-                        Case 5 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5))
-                        Case 6 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6))
-                        Case 7 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7))
-                        Case 8 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8))
-                        Case 9 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9))
-                        Case 10 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10))
-                        Case 11 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11))
-                        Case 12 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12))
-                        Case 13 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13))
-                        Case 14 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14))
-                        Case 15 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15))
-                        Case 16 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16))
-                        Case 17 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17))
-                        Case 18 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18))
-                        Case 19 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19))
-                        Case 20 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20))
-                        Case 21 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21))
-                        Case 22 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22))
-                        Case 23 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23))
-                        Case 24 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24))
-                        Case 25 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25))
-                        Case 26 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26))
-                        Case 27 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26), Args(27))
-                        Case 28 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26), Args(27), Args(28))
-                        Case 29 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26), Args(27), Args(28), Args(29))
-                        Case 30 : theHostApp.Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26), Args(27), Args(28), Args(29), Args(30))
-                    End Select
+                    Try
+                        With ExcelDnaUtil.Application
+                            Select Case UBound(Args)
+                                Case 1 : .Run(CallingWB & Args(1))
+                                Case 2 : .Run(CallingWB & Args(1), Args(2))
+                                Case 3 : .Run(CallingWB & Args(1), Args(2), Args(3))
+                                Case 4 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4))
+                                Case 5 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5))
+                                Case 6 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6))
+                                Case 7 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7))
+                                Case 8 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8))
+                                Case 9 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9))
+                                Case 10 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10))
+                                Case 11 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11))
+                                Case 12 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12))
+                                Case 13 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13))
+                                Case 14 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14))
+                                Case 15 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15))
+                                Case 16 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16))
+                                Case 17 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17))
+                                Case 18 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18))
+                                Case 19 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19))
+                                Case 20 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20))
+                                Case 21 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21))
+                                Case 22 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22))
+                                Case 23 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23))
+                                Case 24 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24))
+                                Case 25 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25))
+                                Case 26 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26))
+                                Case 27 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26), Args(27))
+                                Case 28 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26), Args(27), Args(28))
+                                Case 29 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26), Args(27), Args(28), Args(29))
+                                Case 30 : .Run(CallingWB & Args(1), Args(2), Args(3), Args(4), Args(5), Args(6), Args(7), Args(8), Args(9), Args(10), Args(11), Args(12), Args(13), Args(14), Args(15), Args(16), Args(17), Args(18), Args(19), Args(20), Args(21), Args(22), Args(23), Args(24), Args(25), Args(26), Args(27), Args(28), Args(29), Args(30))
+                            End Select
+                        End With
+                    Catch ex As Exception
+                        internalLogToEventViewer("Error: " & ex.Message & " in Application.Run, CallingWB: " & CallingWB & ",CmdCaller: " & CmdCaller, EventLogEntryType.Error)
+                    End Try
                     ArgsProhibited = False
                     StartMakroDone = True
                 End If
             End If
         Catch ex As Exception
             ArgsProhibited = False
-            LogToEventViewer("Error: " & ex.Message & " in Fetcher.getArguments, CallingWB: " & CallingWB & ",CmdCaller: " & CmdCaller, EventLogEntryType.Error)
+            internalLogToEventViewer("Error: " & ex.Message & " in Fetcher.getArguments, CallingWB: " & CallingWB & ",CmdCaller: " & CmdCaller, EventLogEntryType.Error)
         End Try
     End Sub
 
     <ExcelCommand(Name:="getCmdLineArgs")>
-    Public Function getCmdLineArgs() As Object
-        getArgumentsAndStartMakro()
+    Public Function getCmdLineArgs(Optional debugInfo As Boolean = False) As Object
+        getArgumentsAndStartMakro(calledByGetter:=True, debugInfo:=debugInfo)
         Return CmdLineArgs
     End Function
 
     <ExcelCommand(Name:="getExcelPassedArgs")>
-    Public Function getExcelPassedArgs() As Object
-        getArgumentsAndStartMakro()
+    Public Function getExcelPassedArgs(Optional debugInfo As Boolean = False) As Object
+        getArgumentsAndStartMakro(calledByGetter:=True, debugInfo:=debugInfo)
         Return Args
     End Function
 
@@ -185,14 +191,5 @@ Public Module CmdLineFetcher
             End If
         Next i
     End Function
-
-    ''' <summary>Logs sErrMsg of eEventType in eCategory to EventLog</summary>
-    ''' <param name="sErrMsg"></param>
-    ''' <param name="eEventType"></param>
-    Private Sub LogToEventViewer(sErrMsg As String, Optional eEventType As EventLogEntryType = EventLogEntryType.Error)
-        Dim eventLog As EventLog = New EventLog("Application")
-        ' .Net Runtime is always there if .Net is installed
-        EventLog.WriteEntry(".NET Runtime", sErrMsg, eEventType, 1000)
-    End Sub
 
 End Module

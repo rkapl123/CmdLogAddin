@@ -38,7 +38,10 @@ to get the excel command line (including excel binary path itself and all switch
     Next
 </pre>
 
-to get the specially flagged (/e) excel arguments.
+to get the specially flagged (/e) excel arguments. Both `getCmdlineArgs` and `getExcelPassedArgs` have an optional debugInfo Parameter
+that can be set to True to allow for additional logging of the CmdLine Arguments and the parsed excel arguments to the event log (source is .NET Runtime).
+
+The Workbook.Open of the Workbook's VBA is called BEFORE the procedures defined in `start` or `startExt` have been executed, this is by Excel's design.  
 
 ## Logging
 
@@ -70,13 +73,14 @@ and initialise this object using the setProperties Method (all arguments are opt
 Example:  
 `theLogger.setProperties ThisWorkbook, theEnv:=env, theLoglevel:=8, theLogFilePath:="Logs", theMailRecipients:="admin@somewhere.com"`
 
-Log messages are written by using methods LogError, LogWarn, LogInfo, LogDebug and LogFatal (ends excel application):  
-`theLogger.LogError "testLog logging error"`  
-`theLogger.LogWarn "testLog logging warning"`  
-`theLogger.LogInfo "testLog logging info"`  
+Log messages are written by using methods LogDebug, LogInfo, LogWarn, LogError (sends an error mail using `System.Net.Mail`) and LogFatal (ends excel application):  
 `theLogger.LogDebug "testLog logging debug"`  
+`theLogger.LogInfo "testLog logging info"`  
+`theLogger.LogWarn "testLog logging warning"`  
+`theLogger.LogError "testLog logging error"`  
+`theLogger.LogFatal "testLog logging fatal error"`  
 
-Caller settings can also be changed within the active session:  
+Caller settings can also be changed within the active session (here setting the Caller to `theTestLog.ext`):  
 `theLogger.setProperties ThisWorkbook, , , ,"theTestLog.ext"`  
 `theLogger.LogError "theTestLog.ext: logging error"`  
 `theLogger.LogWarn "theTestLog.ext: logging warning"`  
@@ -85,6 +89,7 @@ Caller settings can also be changed within the active session:
 
 ### Registry Settings 
 
+Configurations for `System.Net.Mail` are defined in the registry values starting with `cdo` (legacy naming)
 Default Values are taken from the registry, located in `[HKCU\Software\VB and VBA Program Settings\LogAddin\Settings]`:  
 
 Is Authentication required, then we need below 3 settings, otherwise do not authenticate  
@@ -115,12 +120,13 @@ Default Subject, Sender, Intro and Greetings for error mails...
 `"defaultMailIntro"="Following error occured in batch process"`  
 `"defaultMailGreetings"="regards, your Errorlog..."`  
 
-Format for logentry timestamp  
+Format for logentry timestamp (has to conform to [.NET Custom Date and Time Format Strings](https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings)) and is 
+used with the [InvariantCulture Property](https://docs.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo.invariantculture)  
 `"timeStampFormat"="dd.MM.yyyy HH:mm:ss"`
 
 Layout for logentries: first column logentry0, then logentry1, .. logentryN. The values (timestamp, loglevel, caller, logmessage) are fixed in the code but can be arranged differently, additional columns can be added as well.  
 
-e:USERNAME is indicating an environment variable that can be fetched (e.g. e:COMPUTERNAME)
+`e:` is indicating an environment variable that can be fetched (e.g. e:COMPUTERNAME or e:USERNAME)
 `"logentry0"="timestamp"`  
 `"logentry1"="loglevel"`  
 `"logentry2"="caller"`  

@@ -1,8 +1,27 @@
+Imports ExcelDna.Integration
+Imports Microsoft.Office.Interop
+Imports System.Diagnostics ' needed for EventLogEntryType !!
 Imports System.IO
 Imports System.Runtime.InteropServices
-Imports Microsoft.Office.Interop
-Imports ExcelDna.Integration
 
+Public Module Globals
+    ''' <summary>necessary to run in main app thread as excel can't quit otherwise</summary>
+    <ExcelCommand(Name:="QuitApp")>
+    Public Sub QuitApp()
+        ExcelDnaUtil.Application.DisplayAlerts = False
+        ExcelDnaUtil.Application.Quit()
+    End Sub
+
+    ''' <summary>Logs internal sErrMsg of eEventType to Application EventLog, source .NET Runtime</summary>
+    ''' <param name="sErrMsg"></param>
+    ''' <param name="eEventType"></param>
+    Public Sub internalLogToEventViewer(sErrMsg As String, Optional eEventType As EventLogEntryType = EventLogEntryType.Error)
+        Dim eventLog As EventLog = New EventLog("Application")
+        ' .Net Runtime is always there if .Net is installed
+        EventLog.WriteEntry(".NET Runtime", sErrMsg, eEventType, 1000)
+    End Sub
+
+End Module
 
 ''' <summary>main class to be used in clients: set theLogger = createObject("LogAddin.Logger")
 '''          doing logging with LogError, LogWarn, LogInfo, LogDebug and LogFatal
@@ -14,7 +33,7 @@ Imports ExcelDna.Integration
 Public Class Logger
     <DllImport("kernel32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
     Public Shared Function AttachConsole(dwProcessId As Integer) As Boolean
-
+        ' might implement this again, unclear how this works in mixed 32/64 bit environments...
     End Function
 
     Private CallerInfo As String
@@ -49,7 +68,7 @@ Public Class Logger
     Private defaultMailIntro As String  '"Folgender Fehler trat in batch process auf "
     Private defaultMailGreetings As String  '"liebe Grüße schickt der Fehleradmin..."
 
-    Private timeStampFormat As String  '"DD.MM.YYYY HH:mm:ss"
+    Private timeStampFormat As String  '"dd.MM.yyyy HH:mm:ss"
     Private logentry() As String
 
     ''' <summary></summary>
@@ -108,7 +127,7 @@ Public Class Logger
     ''' [logPathMsg]
     ''' [MailGreetings]</param>
     ''' <param name="overrideCommonCaller">whether to override CallingObjectName (filename to log to) with theCaller</param>
-    ''' <param name="doMirrorToStdOut">obsolete parameter, left for backward compatibility</param>
+    ''' <param name="doMirrorToStdOut">used for mirroring to stdout, not implemented now (32/64 bit problems), left for backward compatibility</param>
     Public Sub setProperties(Optional theCallingObject As Excel.Workbook = Nothing, Optional theLogLevel As Integer = 4, Optional theLogFilePath As String = Nothing,
         Optional theEnv As String = Nothing, Optional theCaller As String = Nothing, Optional theMailRecipients As String = Nothing,
         Optional theSubject As String = Nothing, Optional writeToEventLog As Boolean = False, Optional theSender As String = Nothing, Optional theMailIntro As String = Nothing,
@@ -116,28 +135,45 @@ Public Class Logger
 
         AlreadySent = False
         If theCallingObject Is Nothing Then
+            Dim sModuleInfo As String = vbNullString
+
+            ' get module info for buildtime (FileDateTime of xll):
+            For Each tModule As ProcessModule In Process.GetCurrentProcess().Modules
+                Dim sModule As String = tModule.FileName
+                If sModule.ToUpper.Contains("CMDLOGADDIN") Then
+                    sModuleInfo = FileDateTime(sModule).ToString()
+                End If
+            Next
+
             MsgBox("Logger.setProperties sets properties for the Logger object" & vbCrLf & vbCrLf &
-               " - theCallingObject .. the calling excel workbook," & vbCrLf & vbCrLf &
+               "- theCallingObject .. the calling excel workbook," & vbCrLf & vbCrLf &
                "These arguments are optional (default=empty/false if not specified):" & vbCrLf &
-               " - theLogLevel ..  (ERROR 1,  WARN 2, INFO 4, DEBUG 8), default = 4" & vbCrLf &
-               " - theLogFilePath .. where to write the logfile (LogFilePath), defaults to callingObject's path" & vbCrLf &
-               " - theEnv .. environment, empty if production, used to append env to LogFilePath for test/other environments" & vbCrLf &
-               " - theCaller .. if caller is not the callingObject (commonCaller) then this can be used to" & vbCrLf &
-               "      * identify the active caller (in case of an addin handling multiple workbooks..)." & vbCrLf &
-               "      * Can include the full path to the calling workbook..," & vbCrLf &
-               "      * the Caller's name will be extracted by using last \ as separator" & vbCrLf &
-               " - theMailRecipients .. comma separated list of the error mail recipients" & vbCrLf &
-               " - theSubject .. the error mail's subject" & vbCrLf &
-               " - writeToEventLog .. should messages be written to the windows event log (true) or to a file (false)" & vbCrLf &
-               " - theSender .. the Sender of the sent error mails" & vbCrLf &
-               " - theMailIntro .. the intro for the error mail's body" & vbCrLf &
-               " - theMailGreetings .. the greetings for the error mail's body, body looks as follows:" & vbCrLf &
+               "- theLogLevel ..  (ERROR 1,  WARN 2, INFO 4, DEBUG 8), default = 4" & vbCrLf &
+               "- theLogFilePath .. where to write the logfile (LogFilePath), defaults to callingObject's path" & vbCrLf &
+               "- theEnv .. environment, empty if production, used to append env to LogFilePath for test/other environments" & vbCrLf &
+               "- theCaller .. if caller is not the callingObject (commonCaller) then this can be used to" & vbCrLf &
+               "     * identify the active caller (in case of an addin handling multiple workbooks..)." & vbCrLf &
+               "     * Can include the full path to the calling workbook..," & vbCrLf &
+               "     * the Caller's name will be extracted by using last \ as separator" & vbCrLf &
+               "- theMailRecipients .. comma separated list of the error mail recipients" & vbCrLf &
+               "- theSubject .. the error mail's subject" & vbCrLf &
+               "- writeToEventLog .. should messages be written to the windows event log (true) or to a file (false)" & vbCrLf &
+               "- theSender .. the Sender of the sent error mails" & vbCrLf &
+               "- theMailIntro .. the intro for the error mail's body" & vbCrLf &
+               "- theMailGreetings .. the greetings for the error mail's body, body looks as follows:" & vbCrLf &
                "   <MailIntro> (executed in: <commonCaller>, current caller: <Caller>):" & vbCrLf &
                "   <logLine>" & vbCrLf &
                "   <logPathMsg>" & vbCrLf &
                "   <MailGreetings>" & vbCrLf &
-               " - overrideCommonCaller .. override CallingObjectName (filename to log to) with given parameter theCaller (true)",
-                   MsgBoxStyle.Critical + MsgBoxStyle.OkOnly, "Logger.setProperties")
+               "- overrideCommonCaller .. override CallingObjectName (filename to log to) with given parameter theCaller (true)",
+                   MsgBoxStyle.Information + MsgBoxStyle.OkOnly, String.Format("CmdLogAddin Version {0} Buildtime {1}", My.Application.Info.Version.ToString, sModuleInfo))
+            MsgBox("Logging is then done with following five methods:" & vbCrLf &
+               "- Logger.LogDebug(msg) .. writes msg if debug level (theLogLevel in setProperties) = 8" & vbCrLf &
+               "- Logger.LogInfo(msg) .. writes msg if debug level >= 4" & vbCrLf &
+               "- Logger.LogWarn(msg) .. writes msg if debug level >= 2" & vbCrLf &
+               "- Logger.LogError(msg) .. writes msg if debug level >= 1, additionally an error mail is sent to theMailRecipients" & vbCrLf &
+               "- Logger.LogFatal(msg) .. writes msg if debug level >= 1, additionally to the error mail the host application is shut down",
+                   MsgBoxStyle.Information + MsgBoxStyle.OkOnly, String.Format("CmdLogAddin Version {0} Buildtime {1}", My.Application.Info.Version.ToString, sModuleInfo))
             Exit Sub
         End If
         On Error Resume Next
@@ -181,7 +217,6 @@ setProperties_Err:
     ''' <param name="LogMessage">Message to be logged</param>
     ''' <param name="LogPrio">priority level (ERROR 1,  WARN 2, INFO 4, DEBUG 8)</param>
     Private Sub LogWrite(LogMessage As String, LogPrio As EventLogEntryType)
-
         Dim theLogFileStr, MailFileLink, FileMessage As String
         FileMessage = ""
 
@@ -218,15 +253,7 @@ LogWrite_Err:
     ''' <param name="LogMessage"></param>
     Public Sub LogFatal(LogMessage As String)
         LogWrite(LogMessage, EventLogEntryType.FailureAudit)
-        ExcelAsyncUtil.QueueAsMacro(Sub()
-                                        QuitApp()
-                                    End Sub)
-    End Sub
-
-    ''' <summary>necessary to run in main thread as excel can't quit otherwise</summary>
-    Private Sub QuitApp()
-        ExcelDnaUtil.Application.DisplayAlerts = False
-        ExcelDnaUtil.Application.Quit()
+        ExcelDnaUtil.Application.OnTime(DateTime.Now, "QuitApp")
     End Sub
 
     ''' <summary>writes the log message LogMessage having appropriate priority (as shown in function name)</summary>

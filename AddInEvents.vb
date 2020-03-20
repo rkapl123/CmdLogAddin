@@ -1,11 +1,9 @@
 ﻿Imports Microsoft.Office.Interop
 Imports ExcelDna.Integration
-Imports System.Runtime.InteropServices
 Imports ExcelDna.ComInterop
 
 
 ''' <summary>AddIn Connection class, handling Open/Close Events from Addin</summary>
-<ComVisible(False)>
 Public Class AddInEvents
     Implements IExcelAddIn
 
@@ -24,7 +22,7 @@ Public Class AddInEvents
             Application = Nothing
             ComServer.DllUnregisterServer()
         Catch ex As Exception
-            MsgBox("CmdLogAddin unloading error: " + ex.Message)
+            internalLogToEventViewer("CmdLogAddin unloading error: " + ex.Message)
         End Try
     End Sub
 
