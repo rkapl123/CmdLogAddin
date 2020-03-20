@@ -5,6 +5,8 @@ Imports System.IO
 Imports System.Runtime.InteropServices
 
 Public Module Globals
+    Public quittingApp As Boolean = False
+
     ''' <summary>necessary to run in main app thread as excel can't quit otherwise</summary>
     <ExcelCommand(Name:="QuitApp")>
     Public Sub QuitApp()
@@ -252,6 +254,7 @@ LogWrite_Err:
     ''' <summary>writes the log message LogMessage having appropriate priority (as shown in function name) and ends Excel</summary>
     ''' <param name="LogMessage"></param>
     Public Sub LogFatal(LogMessage As String)
+        quittingApp = True
         LogWrite(LogMessage, EventLogEntryType.FailureAudit)
         ExcelDnaUtil.Application.OnTime(DateTime.Now, "QuitApp")
     End Sub

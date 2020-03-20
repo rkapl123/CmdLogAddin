@@ -1,4 +1,5 @@
 Imports ExcelDna.Integration
+Imports Microsoft.Office.Interop
 Imports System.Diagnostics ' needed for EventLogEntryType !!
 
 
@@ -28,14 +29,30 @@ Public Module CmdLineFetcher
             ' /e/STARTEXT /containedWB /invokedMacro/arg1   /arg2  ....
             ' / /Args(0)  /Args(1)     /Args(2)     /Args(3)/Args(4) ..
             If UBound(Args) >= 1 And Not calledByGetter Then
-                If UCase$(Args(0)) = "START" Or UCase$(Args(0)) = "STARTEXT" Then
+                Dim startSwitch As String = UCase$(Args(0))
+                If Left(startSwitch, 5) = "START" Then
+                    ' we like to be unobtrusive when starting from the commandline...
+                    ExcelDnaUtil.Application.WindowState = Excel.XlWindowState.xlMinimized
+                    ' in case we want to really be unobtrusive, specify hidden after your start
+                    If Right(UCase$(startSwitch), 6) = "HIDDEN" Then
+                        ExcelDnaUtil.Application.Visible = False
+                        startSwitch = Replace(startSwitch, "HIDDEN", "")
+                    End If
                     ' CmdCaller is (usually) the calling workbook (second Cmdline argument, first is Excel itself)
                     CmdCaller = CmdLineArgs(1)
-                    ' if second cmdline argument is a switch passed to excel (like /r for readonly) then calling workbook is third cmdline argument
-                    If Left(CmdCaller, 1) = "/" Then CmdCaller = CmdLineArgs(2)
-                    If debugInfo Then internalLogToEventViewer("CmdCaller:" & CmdCaller & ",ExcelMakroArg:" & ExcelMakroArg & ",Args(0):" & Args(0) & ",Args(1):" & Args(1), EventLogEntryType.Information)
+                    ' if second/third/fourth cmdline argument is a switch passed to excel (like /r for readonly) then calling workbook is third/fourth/fifth cmdline argument
+                    If Left(CmdCaller, 1) = "/" And CmdLineArgs.Length > 2 Then
+                        CmdCaller = CmdLineArgs(2)
+                        If Left(CmdCaller, 1) = "/" And CmdLineArgs.Length > 3 Then
+                            CmdCaller = CmdLineArgs(3)
+                            If Left(CmdCaller, 1) = "/" And CmdLineArgs.Length > 4 Then
+                                CmdCaller = CmdLineArgs(4)
+                            End If
+                        End If
+                    End If
+                    If debugInfo Then internalLogToEventViewer("CmdCaller:" & CmdCaller & ",ExcelMakroArg:" & ExcelMakroArg & ",startSwitch:" & startSwitch & ",Args(1):" & Args(1), EventLogEntryType.Information)
 
-                    If UCase$(Args(0)) = "START" Then ' called sub within calling workbook or loaded addins: Start
+                    If startSwitch = "START" Then ' called sub within calling workbook or loaded addins: Start
                         If InStr(1, Args(1), "!") = 0 Then CallingWB = "'" & CmdCaller & "'!"
                     Else ' called sub outside of calling workbook or loaded addins/workbooks: StartExt
                         ' If we have a full path in Args(1) then use it, however caller must provide also correct excel calling convention: '<FullPath>\File.xlsm'!Macro
@@ -107,6 +124,8 @@ Public Module CmdLineFetcher
             ArgsProhibited = False
             internalLogToEventViewer("Error: " & ex.Message & " in Fetcher.getArguments, CallingWB: " & CallingWB & ",CmdCaller: " & CmdCaller, EventLogEntryType.Error)
         End Try
+        ' if we were not quit by now, make excel visible again to say we are here...
+        If Not quittingApp And Not ExcelDnaUtil.Application.Visible Then ExcelDnaUtil.Application.Visible = True
     End Sub
 
     <ExcelCommand(Name:="getCmdLineArgs")>

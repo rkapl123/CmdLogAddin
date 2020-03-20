@@ -30,7 +30,7 @@ Public Class AddInEvents
     ''' <param name="Wb">opened workbook</param>
     Private Sub Application_WorkbookOpen(Wb As Excel.Workbook) Handles Application.WorkbookOpen
         If Not Wb.IsAddin And Not StartMakroDone And Not ArgsProhibited Then
-            getArgumentsAndStartMakro()
+            getArgumentsAndStartMakro() ' debugInfo:=True
         End If
     End Sub
 
