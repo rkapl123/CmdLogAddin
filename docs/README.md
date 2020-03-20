@@ -7,7 +7,7 @@ CmdLogAddin starts a macro passed in the commandline of Excel and passes any arg
 Usage: Call Excel with a the filename (for opening readonly after /r) and provide args to be passed after /e:  
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r TestExcelCmdArgFetching.xls /e/<start|startExt>/<MakroToStart>/<arg1 for Macro>/<arg2 for Macro>/.../<arg28 for Macro>`
 
-In starting command:  
+In the starting commandline (can be in a cmd script or in the task scheduler):  
 * pass arguments to workbook_open (see below) with arguments arg1, arg2, arg3  
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" TestExcelCmdArgFetching.xls /e/arg1/arg2/arg3`
 * start excel procedure testsub in TestExcelCmdArgFetching.xls with arguments arg1, arg2, arg3  
@@ -20,6 +20,8 @@ In starting command:
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" %~dp0TestExcelCmdArgFetching.xls /e/startExt/Test.xla!start/arg1`
 * start excel external procedure (Workbook in different directory as TestExcelCmdArgFetching.xls)  
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" %~dp0TestExcelCmdArgFetching.xls /e/startExt/'C:\dev\CmdLogAddin\TestExcelCmdArgFetchingExt.xls'!testMacro/arg1`
+
+A maximum of three switches between EXCEL.EXE and the workbook are accepted by the Addin (e.g. /r /x /t), switches after the workbook are no problem.  
 
 When using the first (most raw) method to get commandline arguments, you have to call either  
 
@@ -42,6 +44,10 @@ to get the specially flagged (/e) excel arguments. Both `getCmdlineArgs` and `ge
 that can be set to True to allow for additional logging of the CmdLine Arguments and the parsed excel arguments to the event log (source is .NET Runtime).
 
 The Workbook.Open of the Workbook's VBA is called BEFORE the procedures defined in `start` or `startExt` have been executed, this is by Excel's design.  
+
+Generally, Excel will be started minimized to be unobstrusive for an unexpecting user. To further "hide" Excel, you can add `hidden` to the start switches (so `starthidden` or `startExthidden`). 
+In this case, after briefly being opened, Excel will turn off visible mode and thus "hide" from the desktop and the taskbar. In case the started macro didn't quit Excel (or excel was closed by LogFatal), 
+visible mode will be turned on again after finishing the called macro.  
 
 ## Logging
 
