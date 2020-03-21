@@ -8,7 +8,7 @@ Usage: Call Excel with a the filename (for opening readonly after /r) and provid
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r TestExcelCmdArgFetching.xls /e/<start|startExt>/<MakroToStart>/<arg1 for Macro>/<arg2 for Macro>/.../<arg28 for Macro>`
 
 In the starting commandline (can be in a cmd script or in the task scheduler):  
-* pass arguments to workbook_open (see below) with arguments arg1, arg2, arg3  
+* arguments arg1, arg2, arg3 simply passed to Excel(how to fetch them see below)  
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" TestExcelCmdArgFetching.xls /e/arg1/arg2/arg3`
 * start excel procedure testsub in TestExcelCmdArgFetching.xls with arguments arg1, arg2, arg3  
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r TestExcelCmdArgFetching.xls /e/start/testsub/arg1/arg2/arg3`
@@ -23,7 +23,7 @@ In the starting commandline (can be in a cmd script or in the task scheduler):
 
 A maximum of three switches between EXCEL.EXE and the workbook are accepted by the Addin (e.g. /r /x /t), switches after the workbook are no problem.  
 
-When using the first (most raw) method to get commandline arguments, you have to call either  
+When using the first method to get commandline arguments, you have to call either  
 
 <pre lang="vb.net">
     CmdlineArgs = Application.Run("getCmdlineArgs")
@@ -45,9 +45,18 @@ that can be set to True to allow for additional logging of the CmdLine Arguments
 
 The Workbook.Open of the Workbook's VBA is called BEFORE the procedures defined in `start` or `startExt` have been executed, this is by Excel's design.  
 
-Generally, Excel will be started minimized to be unobstrusive for an unexpecting user. To further "hide" Excel, you can add `hidden` to the start switches (so `starthidden` or `startExthidden`). 
+Generally, Excel will be minimized when using the `start` switches to be unobstrusive for an unexpecting user (when fetching the arguments with `getCmdlineArgs` or `getExcelPassedArgs` on Workbook_Open, Excel is not minimized).
+To further "hide" Excel, you can add `hidden` to the start switches (so `starthidden` or `startExthidden`). 
 In this case, after briefly being opened, Excel will turn off visible mode and thus "hide" from the desktop and the taskbar. In case the started macro didn't quit Excel (or excel was closed by LogFatal), 
 visible mode will be turned on again after finishing the called macro.  
+
+### Known Issues
+
+Quitting Excel from the Workbook_Open event procedure (or any subsequently called procedure) is only possible by calling a procedure on a different thread by using Application.OnTime (Now, "NameOfQuittingProcedure")
+
+The same applies to the procedures invoked with the `start` switches, so for quitting Excel use Application.OnTime
+
+The LogFatal call (see below) already uses this method, so there is nothing to do in this case.
 
 ## Logging
 
@@ -75,6 +84,8 @@ and initialise this object using the setProperties Method (all arguments are opt
     [logPathMsg]  
     [MailGreetings]  
 * overrideCommonCaller .. whether to override CallingObjectName (filename to log to) with theCaller
+
+Calling setProperties without any argument brings two helper message boxes that display the usage information.
 
 Example:  
 `theLogger.setProperties ThisWorkbook, theEnv:=env, theLoglevel:=8, theLogFilePath:="Logs", theMailRecipients:="admin@somewhere.com"`
