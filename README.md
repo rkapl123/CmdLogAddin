@@ -1,3 +1,5 @@
+[![License](https://img.shields.io/github/license/rkapl123/CmdLogAddin.svg)](https://github.com/rkapl123/CmdLogAddin/blob/master/LICENSE)
+
 # CmdLogAddin
 
 Excel Addin that allows you to parse Excel's Cmdline and start any Macro that is contained either inside the started Workbook, a startup loaded Addin or outside.  
