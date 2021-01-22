@@ -10,9 +10,9 @@ Imports System.Runtime.InteropServices
 
 <Assembly: AssemblyTitle("CmdLogAddin")>
 <Assembly: AssemblyDescription("")>
-<Assembly: AssemblyCompany("OEBFA")>
+<Assembly: AssemblyCompany("https://rkapl123.github.io/CmdLogAddin")>
 <Assembly: AssemblyProduct("CmdLogAddin")>
-<Assembly: AssemblyCopyright("Copyright © OEBFA 2019")>
+<Assembly: AssemblyCopyright("Copyright © 2020, MIT License")>
 <Assembly: AssemblyTrademark("")>
 
 <Assembly: ComVisible(True)>

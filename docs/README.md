@@ -138,7 +138,7 @@ Default Subject, Sender, Intro and Greetings for error mails...
 `"defaultMailGreetings"="regards, your Errorlog..."`  
 
 Format for logentry timestamp (has to conform to [.NET Custom Date and Time Format Strings](https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings)) and is 
-used with the [InvariantCulture Property](https://docs.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo.invariantculture)  
+used with the "en-US" culture settings.  
 `"timeStampFormat"="dd.MM.yyyy HH:mm:ss"`
 
 Layout for logentries: first column logentry0, then logentry1, .. logentryN. The values (timestamp, loglevel, caller, logmessage) are fixed in the code but can be arranged differently, additional columns can be added as well.  

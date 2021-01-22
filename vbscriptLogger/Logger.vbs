@@ -10,6 +10,10 @@ Public Const LogWrn = 2
 Public Const LogInf = 4
 Public Const LogDbg = 8
 
+' cscript based simple logger
+' Copyright © 2020, MIT License, Roland Kapl
+' https://rkapl123.github.io/CmdLogAddin
+
 Public theLogger
 set theLogger = New Logger
 

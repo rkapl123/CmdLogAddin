@@ -174,7 +174,9 @@ Public Class Logger
                "- Logger.LogInfo(msg) .. writes msg if debug level >= 4" & vbCrLf &
                "- Logger.LogWarn(msg) .. writes msg if debug level >= 2" & vbCrLf &
                "- Logger.LogError(msg) .. writes msg if debug level >= 1, additionally an error mail is sent to theMailRecipients" & vbCrLf &
-               "- Logger.LogFatal(msg) .. writes msg if debug level >= 1, additionally to the error mail the host application is shut down",
+               "- Logger.LogFatal(msg) .. writes msg if debug level >= 1, additionally to the error mail the host application is shut down" & vbCrLf & vbCrLf &
+               "Author/Website: " & My.Application.Info.CompanyName.ToString & vbCrLf &
+               "License: " & My.Application.Info.Copyright.ToString,
                    MsgBoxStyle.Information + MsgBoxStyle.OkOnly, String.Format("CmdLogAddin Version {0} Buildtime {1}", My.Application.Info.Version.ToString, sModuleInfo))
             Exit Sub
         End If
@@ -223,7 +225,7 @@ setProperties_Err:
         FileMessage = ""
 
         On Error GoTo LogWrite_Err
-1:      Dim timestamp = Date.Now().ToString(timeStampFormat, System.Globalization.CultureInfo.InvariantCulture)
+1:      Dim timestamp = Date.Now().ToString(timeStampFormat, System.Globalization.CultureInfo.CreateSpecificCulture("en-US"))
         Dim i As Integer
 2:      For i = 0 To UBound(logentry)
 3:          If LCase$(logentry(i)) = "timestamp" Then FileMessage = FileMessage & timestamp & vbTab
