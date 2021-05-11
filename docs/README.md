@@ -142,8 +142,7 @@ used with the "en-US" culture settings.
 `"timeStampFormat"="dd.MM.yyyy HH:mm:ss"`
 
 Layout for logentries: first column logentry0, then logentry1, .. logentryN. The values (timestamp, loglevel, caller, logmessage) are fixed in the code but can be arranged differently, additional columns can be added as well.  
-
-`e:` is indicating an environment variable that can be fetched (e.g. e:COMPUTERNAME or e:USERNAME)
+`e:` is indicating an environment variable (e.g. e:COMPUTERNAME or e:USERNAME) that can be fetched in this context. Example:  
 `"logentry0"="timestamp"`  
 `"logentry1"="loglevel"`  
 `"logentry2"="caller"`  
