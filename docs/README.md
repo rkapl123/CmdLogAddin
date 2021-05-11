@@ -25,7 +25,7 @@ A maximum of three switches between EXCEL.EXE and the workbook are accepted by t
 
 When using the first method to get commandline arguments, you have to call either  
 
-<pre lang="vb.net">
+<pre lang="vb">
     CmdlineArgs = Application.Run("getCmdlineArgs")
     For Each arg In CmdlineArgs
         MsgBox ("CmdlineArg:" & arg)
@@ -33,7 +33,7 @@ When using the first method to get commandline arguments, you have to call eithe
 </pre>
 to get the excel command line (including excel binary path itself and all switches passed to it), or  
 
-<pre lang="vb.net">
+<pre lang="vb">
     ExcelPassedArgs = Application.Run("getExcelPassedArgs")
     For Each arg In ExcelPassedArgs
         MsgBox ("ExcelPassedArg:" & arg)
