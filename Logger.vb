@@ -69,7 +69,7 @@ Public Class Logger
     Private defaultSender As String  '"Administrator"
     Private defaultMailIntro As String  '"Folgender Fehler trat in batch process auf "
     Private defaultMailGreetings As String  '"liebe Grüße schickt der Fehleradmin..."
-
+    Private timeStampCulture As String '""
     Private timeStampFormat As String  '"dd.MM.yyyy HH:mm:ss"
     Private logentry() As String
 
@@ -90,6 +90,7 @@ Public Class Logger
         defaultMailGreetings = fetchSetting("defaultMailGreetings", "liebe Grüße schickt der Fehleradmin...")
 
         timeStampFormat = fetchSetting("timeStampFormat", "dd.MM.yyyy HH:mm:ss")
+        timeStampCulture = fetchSetting("timeStampCulture", "")
         Dim i As Integer
         i = 0
         Dim entry As String = fetchSetting("logentry" & i, vbNullString)
@@ -225,7 +226,7 @@ setProperties_Err:
         FileMessage = ""
 
         On Error GoTo LogWrite_Err
-1:      Dim timestamp = Date.Now().ToString(timeStampFormat, System.Globalization.CultureInfo.CreateSpecificCulture("en-US"))
+1:      Dim timestamp = Date.Now().ToString(timeStampFormat, System.Globalization.CultureInfo.CreateSpecificCulture(timeStampCulture))
         Dim i As Integer
 2:      For i = 0 To UBound(logentry)
 3:          If LCase$(logentry(i)) = "timestamp" Then FileMessage = FileMessage & timestamp & vbTab

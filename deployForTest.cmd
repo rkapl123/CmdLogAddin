@@ -26,5 +26,4 @@ copy /Y Test\TestExcelAddin.xlam Distribution\
 copy /Y Test\TestExcelCmdArgFetching.cmd Distribution\
 copy /Y Test\TestExcelCmdArgFetching.xls Distribution\
 copy /Y Test\TestExcelCmdArgFetchingExt.xls Distribution\
-"C:\Program Files\7-Zip\7z.exe" a -tzip CmdLogAddinReleasePkg.zip Distribution
 pause

@@ -2,9 +2,20 @@
 
 ## Cmdline Arguments
 
-CmdLogAddin starts a macro passed in the commandline of Excel and passes any arguments given after that macro.  
+CmdLogAddin starts a macro passed in the commandline of Excel and passes any arguments given after that macro. Additionally it has a builtin logger that writes to a logfile, windows eventlog and sends mails in case of errors.  
 
-Usage: Call Excel with a the filename (for opening readonly after /r) and provide args to be passed after /e:  
+### Installation
+
+* Dependencies/Prerequisites
+	* .NET 4 or higher (usually distributed with Windows)
+
+Download the zip package from the latest release in [https://github.com/rkapl123/CmdLogAddin/tags](https://github.com/rkapl123/CmdLogAddin/tags), unzip to any location and run deployAddin.cmd in the folder Distribution.
+This copies CmdLogAddin32/64.xll (depending on the bitness of your Office Installation) to your %appdata%\Microsoft\AddIns folder and starts Excel for activating CmdLogAddin (adding it to the registered Addins).
+
+
+### Usage
+
+Call Excel with a the filename (for opening readonly after /r) and provide args to be passed after /e:  
 `"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r TestExcelCmdArgFetching.xls /e/<start|startExt>/<MakroToStart>/<arg1 for Macro>/<arg2 for Macro>/.../<arg28 for Macro>`
 
 In the starting commandline (can be in a cmd script or in the task scheduler):  
@@ -138,8 +149,9 @@ Default Subject, Sender, Intro and Greetings for error mails...
 `"defaultMailGreetings"="regards, your Errorlog..."`  
 
 Format for logentry timestamp (has to conform to [.NET Custom Date and Time Format Strings](https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings)) and is 
-used with the "en-US" culture settings.  
+used with the `timeStampCulture` culture settings (default: empty culture = invariant).  
 `"timeStampFormat"="dd.MM.yyyy HH:mm:ss"`
+`"timeStampCulture"="de-DE"`
 
 Layout for logentries: first column logentry0, then logentry1, .. logentryN. The values (timestamp, loglevel, caller, logmessage) are fixed in the code but can be arranged differently, additional columns can be added as well.  
 `e:` is indicating an environment variable (e.g. e:COMPUTERNAME or e:USERNAME) that can be fetched in this context. Example:  
@@ -148,5 +160,32 @@ Layout for logentries: first column logentry0, then logentry1, .. logentryN. The
 `"logentry2"="caller"`  
 `"logentry3"="e:USERNAME"`  
 `"logentry4"="logmessage"`  
+
+# VB-script Logger
+
+To also have a logger for vb-script (the old Log-Addin provided an Active-X loadable COM addin here), there is now a pure vb-script based Class in the file Logger.vbs
+
+You can add a logger with:
+```VBScript 
+loggerHome = "place\where\Logger.vbs\is\located"
+ExecuteGlobal CreateObject("Scripting.FileSystemObject").OpenTextFile(loggerHome & "Logger.vbs", 1).ReadAll
+```
+
+After adding the logger, set environment based on folder name and set the properties of the logger:
+```VBScript 
+If InStr(1, Wscript.ScriptFullName, "Test") > 0 Then theEnv = "Test"
+' Here theMailRecipients is the current user. Can also be some other hardcoded mail address...
+theMailRecipients = CreateObject("WScript.Shell").ExpandEnvironmentStrings("%USERNAME%") & "@yourdomain.com"
+theLogger.setProperties theCallingObject = Wscript, theLogLevel = 4, theLogFilePath, theEnv, theCaller, theMailRecipients, theSubject, writeToEventLog, theSender, theMailIntro, theMailGreetings, overrideCommonCaller, doMirrorToStdOut
+``` 
+
+In the code, add logging as follows:
+```VBScript 
+theLogger.LogError "error" ' also sends an errormail
+theLogger.LogWarn "warning"
+theLogger.LogInfo "info"
+theLogger.LogDebug "debug"
+theLogger.LogFatal "fatal error (ends execution)" ' also sends an errormail
+```
 
 CmdLogAddin is distributed under the [GNU Public License V3](http://www.gnu.org/copyleft/gpl.html).

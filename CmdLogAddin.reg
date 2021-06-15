@@ -21,5 +21,5 @@ Windows Registry Editor Version 5.00
 "logentry2"="caller"
 "logentry3"="e:USERNAME"
 "logentry4"="logmessage"
-"mailCmd"="<curPath>\\mailsend-go.exe -smtp <serverName> -port <serverPort> <useSSL> -log <curPath>\\mailsend-go.log auth -user <userID> -pass \"<passwd>\" -f <fromAddr> -to <toAddr> -sub \"<subject>\" body -file <curPath>\\mailbody.txt"
+"mailCmd"="C:\\mailsend-go\\path\\mailsend-go.exe -smtp <serverName> -port <serverPort> <useSSL> -log \"<curPath>\\mailsend-go.log\" auth -user <userID> -pass \"<passwd>\" -f \"<fromAddr>\" -to \"<toAddr>\" -sub \"<subject>\" body -file \"<curPath>\\mailbody.txt\""
 

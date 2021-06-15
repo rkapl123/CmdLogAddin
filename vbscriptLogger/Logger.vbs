@@ -1,7 +1,19 @@
-' add logger with:
+'' add logger with:
 ' loggerHome = "place\where\Logger.vbs\is\located"
 ' ExecuteGlobal CreateObject("Scripting.FileSystemObject").OpenTextFile(loggerHome & "Logger.vbs", 1).ReadAll
+
+'' after adding logger, set environment based on folder name and set the properties of the logger:
+' If InStr(1, Wscript.ScriptFullName, "Test") > 0 Then theEnv = "Test"
+'' Here theMailRecipients is the current user. Can also be some other hardcoded mail address...
+' theMailRecipients = CreateObject("WScript.Shell").ExpandEnvironmentStrings("%USERNAME%") & "@yourdomain.com"
 ' theLogger.setProperties theCallingObject = Wscript, theLogLevel = 4, theLogFilePath, theEnv, theCaller, theMailRecipients, theSubject, writeToEventLog, theSender, theMailIntro, theMailGreetings, overrideCommonCaller, doMirrorToStdOut
+
+' in the code, add logging as follows:
+'theLogger.LogError "error" ' also sends an errormail
+'theLogger.LogWarn "warning"
+'theLogger.LogInfo "info"
+'theLogger.LogDebug "debug"
+'theLogger.LogFatal "fatal error (ends execution)" ' also sends an errormail
 
 Option Explicit
 Const RootRegPath = "HKEY_CURRENT_USER\Software\VB and VBA Program Settings\LogAddin\Settings\"
@@ -269,6 +281,7 @@ Class Logger
 	' sends an error mail containing the logged line (logLine) and a hyperlink to the logfile (logPathMsg)
 	Private Sub sendMail(logLine, logPathMsg)
 		dim strErrorCode, mailCmd, curPath, fsm, mb
+		' write mail message to file, being picked up by mailCmd later in curPath
 		curPath = Replace(Wscript.ScriptFullName, "\" & Wscript.ScriptName, "")
 		set fsm = CreateObject("Scripting.FileSystemObject")
 		set mb = fsm.OpenTextFile(curPath & "\mailbody.txt", 2, True)
@@ -277,9 +290,11 @@ Class Logger
 			& logPathMsg & vbLf & vbLf _
 			& IIf(LenB(MailGreetings) = 0, defaultMailGreetings, MailGreetings)
 		mb.Close
+		
 		set mb = Nothing
 		set fsm = Nothing
 		mailCmd = fetchSetting("mailCmd", "")
+		if mailCmd = "" then LogToIntEventViewer("couldn't find setting entry for mailCmd in registry path " & RootRegPath)
 		mailCmd = replace(mailCmd, "<serverName>", cdoServerName)
 		mailCmd = replace(mailCmd, "<serverPort>", cdoServerPort)
 		mailCmd = replace(mailCmd, "<userID>", cdoUserID)
@@ -289,9 +304,9 @@ Class Logger
 		mailCmd = replace(mailCmd, "<toAddr>", mailRecipients)
 		mailCmd = replace(mailCmd, "<subject>", IIf(LenB(Subject) = 0, defaultSubject, Subject))
 		mailCmd = replace(mailCmd, "<useSSL>", iif(cdoUseSSL, "-ssl", ""))
-		wscript.echo mailCmd
+
 		strErrorCode = shell.Run(mailCmd, 0, True)
-		if strErrorCode <> 0 Then LogToIntEventViewer "Error after sending Mail with defined mailCmd: " & mailCmd & ". errorcode:" & strErrorCode
+		if strErrorCode <> 0 Then LogToIntEventViewer "Error after sending Mail with defined mailCmd: " & mailCmd & " returncode:" & strErrorCode
 		AlreadySent = True
 	End Sub
 
@@ -304,6 +319,7 @@ Class Logger
 	End Function
 
 	Private Sub LogToIntEventViewer(sErrMsg)
+		wscript.echo "internal error:" & sErrMsg
 		shell.LogEvent LogErr, "Logger.vbs internal Error: " & sErrMsg
 	End Sub
 
