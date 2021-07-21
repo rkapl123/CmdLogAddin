@@ -280,7 +280,7 @@ Class Logger
 	'
 	' sends an error mail containing the logged line (logLine) and a hyperlink to the logfile (logPathMsg)
 	Private Sub sendMail(logLine, logPathMsg)
-		dim strErrorCode, mailCmd, curPath, fsm, mb
+		dim mailProcExit, mailCmd, curPath, fsm, mb
 		' write mail message to file, being picked up by mailCmd later in curPath
 		curPath = Replace(Wscript.ScriptFullName, "\" & Wscript.ScriptName, "")
 		set fsm = CreateObject("Scripting.FileSystemObject")
@@ -304,11 +304,37 @@ Class Logger
 		mailCmd = replace(mailCmd, "<toAddr>", mailRecipients)
 		mailCmd = replace(mailCmd, "<subject>", IIf(LenB(Subject) = 0, defaultSubject, Subject))
 		mailCmd = replace(mailCmd, "<useSSL>", iif(cdoUseSSL, "-ssl", ""))
-
-		strErrorCode = shell.Run(mailCmd, 0, True)
-		if strErrorCode <> 0 Then LogToIntEventViewer "Error after sending Mail with defined mailCmd: " & mailCmd & " returncode:" & strErrorCode
+		
+		mailProcExit = Exec(mailCmd, 10)
+		If mailProcExit <> "" Then LogToIntEventViewer "Error after sending Mail with defined mailCmd: " & mailCmd & " returned:" & mailProcExit
 		AlreadySent = True
 	End Sub
+	
+	' Calls WshShell.Exec with c and kills the process tree after the specified timeout t (seconds)
+	' Returns the created WshScriptExec object
+	Private Function Exec(c, t)
+		Dim e
+		On Error Resume Next
+		Set e = shell.Exec(c)
+		If Err<>0 then 
+			Exec = "Error executing """ & c & """: " & Err.Description
+			Exit Function
+		End If
+		Do While e.Status = 0
+			Wscript.Sleep 1000
+			t = t - 1
+			If 0 >= t Then
+				Call shell.Run("taskkill /t /f /pid " & e.ProcessId, 0, True)
+				Exec = "timeout reached, killed process..."
+				Exit Function
+			End If
+		Loop
+		If e.ExitCode <> 0 then
+			Exec = "ExitCode=" & e.ExitCode
+		Else
+			Exec = ""
+		End If
+	End Function
 
 	Private Function IIf( expr, truepart, falsepart )
 		If expr Then 
@@ -320,6 +346,7 @@ Class Logger
 
 	Private Sub LogToIntEventViewer(sErrMsg)
 		wscript.echo "internal error:" & sErrMsg
+		fh.WriteLine "internal error:" & sErrMsg
 		shell.LogEvent LogErr, "Logger.vbs internal Error: " & sErrMsg
 	End Sub
 
