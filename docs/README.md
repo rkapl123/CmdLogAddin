@@ -16,21 +16,21 @@ This copies CmdLogAddin32/64.xll (depending on the bitness of your Office Instal
 ### Usage
 
 Call Excel with a the filename (for opening readonly after /r) and provide args to be passed after /e:  
-`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r TestExcelCmdArgFetching.xls /e/<start|startExt>/<MakroToStart>/<arg1 for Macro>/<arg2 for Macro>/.../<arg28 for Macro>`
+`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r /e/<start|startExt>/<MakroToStart>/<arg1 for Macro>/<arg2 for Macro>/.../<arg28 for Macro> TestExcelCmdArgFetching.xls`
 
 In the starting commandline (can be in a cmd script or in the task scheduler):  
 * arguments arg1, arg2, arg3 simply passed to Excel(how to fetch them see below)  
-`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" TestExcelCmdArgFetching.xls /e/arg1/arg2/arg3`
+`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /e/arg1/arg2/arg3 TestExcelCmdArgFetching.xls`
 * start excel procedure testsub in TestExcelCmdArgFetching.xls with arguments arg1, arg2, arg3  
-`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r TestExcelCmdArgFetching.xls /e/start/testsub/arg1/arg2/arg3`
+`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r /e/start/testsub/arg1/arg2/arg3 TestExcelCmdArgFetching.xls`
 * start "internal" excel procedure start which is already loaded in excel (TestExcelAddin.xlam assumed to be loaded at startup, if necessary move xlam into XLSTART folder)  
-`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r TestExcelCmdArgFetching.xls /e/start/TestExcelAddin.xlam!start`
+`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /r /e/start/TestExcelAddin.xlam!start TestExcelCmdArgFetching.xls`
 * start excel external procedure (Workbook in same directory as TestExcelCmdArgFetching.xls)  
-`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" %~dp0TestExcelCmdArgFetching.xls /e/startExt/Test.xla!start`
+`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /e/startExt/Test.xla!start %~dp0TestExcelCmdArgFetching.xls`
 * start excel external procedure (Workbook in same directory as TestExcelCmdArgFetching.xls) with argument arg1  
-`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" %~dp0TestExcelCmdArgFetching.xls /e/startExt/Test.xla!start/arg1`
+`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /e/startExt/Test.xla!start/arg1 %~dp0TestExcelCmdArgFetching.xls`
 * start excel external procedure (Workbook in different directory as TestExcelCmdArgFetching.xls)  
-`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" %~dp0TestExcelCmdArgFetching.xls /e/startExt/'C:\dev\CmdLogAddin\TestExcelCmdArgFetchingExt.xls'!testMacro/arg1`
+`"C:\Program Files\Microsoft Office\Office14\EXCEL.EXE" /e/startExt/'C:\dev\CmdLogAddin\TestExcelCmdArgFetchingExt.xls'!testMacro/arg1 %~dp0TestExcelCmdArgFetching.xls`
 
 A maximum of three switches between EXCEL.EXE and the workbook are accepted by the Addin (e.g. /r /x /t), switches after the workbook are no problem.  
 
@@ -63,11 +63,10 @@ visible mode will be turned on again after finishing the called macro.
 
 ### Known Issues
 
-Quitting Excel from the Workbook_Open event procedure (or any subsequently called procedure) is only possible by calling a procedure on a different thread by using Application.OnTime (Now, "NameOfQuittingProcedure")
+Quitting Excel from the Workbook_Open event procedure (or any subsequently called procedure) is only possible by calling a procedure on a different thread by using Application.OnTime (Now, "NameOfQuittingProcedure")  
+The same applies to the procedures invoked with the `start` switches, so for quitting Excel use `Application.OnTime`. The LogFatal call (see below) already uses this method, so there is nothing to do in this case.
 
-The same applies to the procedures invoked with the `start` switches, so for quitting Excel use Application.OnTime
-
-The LogFatal call (see below) already uses this method, so there is nothing to do in this case.
+Office 2019 seems to modify the command line (removing everything after the called workbook), so it is advisable to place the arguments first and the called workbook last.
 
 ## Logging
 
@@ -160,6 +159,9 @@ Layout for logentries: first column logentry0, then logentry1, .. logentryN. The
 `"logentry2"="caller"`  
 `"logentry3"="e:USERNAME"`  
 `"logentry4"="logmessage"`  
+
+Debugging into event viewer: To add debug trace messages into the event viewer (source being .NET Runtime) add the following registry setting:  
+`"debug"="true"`  
 
 # VB-script Logger
 

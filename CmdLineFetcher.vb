@@ -9,6 +9,32 @@ Public Module CmdLineFetcher
     Public ArgsProhibited As Boolean = False ' prohibit Argument fetching during opening workbooks when App.Run Macro is loaded
     Public Args As Object
     Public CmdLineArgs() As String
+    Public AppVisible As Boolean
+    Public quittingApp As Boolean = False
+
+    ''' <summary>necessary to run in main app thread as excel can't quit otherwise</summary>
+    <ExcelCommand(Name:="QuitApp")>
+    Public Sub QuitApp()
+        ExcelDnaUtil.Application.DisplayAlerts = False
+        ExcelDnaUtil.Application.Quit()
+    End Sub
+
+    ''' <summary>Logs internal sErrMsg of eEventType to Application EventLog, source .NET Runtime</summary>
+    ''' <param name="sErrMsg"></param>
+    ''' <param name="eEventType"></param>
+    Public Sub internalLogToEventViewer(sErrMsg As String, Optional eEventType As EventLogEntryType = EventLogEntryType.Error)
+        Dim eventLog As EventLog = New EventLog("Application")
+        ' .Net Runtime is always there if .Net is installed
+        EventLog.WriteEntry(".NET Runtime", sErrMsg, eEventType, 1000)
+    End Sub
+
+    ''' <summary>encapsulates setting fetching (currently registry)</summary>
+    ''' <param name="Key">key of setting</param>
+    ''' <param name="defaultValue">default value to be used if no setting given</param>
+    ''' <returns>setting value</returns>
+    Public Function fetchSetting(Key As String, defaultValue As Object) As Object
+        fetchSetting = GetSetting("LogAddin", "Settings", Key, defaultValue)
+    End Function
 
     ''' <summary>get excel arguments from command line of excel and start the macro given after Start or StartExt</summary>
     ''' <param name="argStart">argument starting portion to scan for ("/e" is the most harmless choice for excel)</param>
@@ -28,6 +54,7 @@ Public Module CmdLineFetcher
             ' /e/START    /invokedMacro/arg1        /arg2   /arg3  ....
             ' /e/STARTEXT /containedWB /invokedMacro/arg1   /arg2  ....
             ' / /Args(0)  /Args(1)     /Args(2)     /Args(3)/Args(4) ..
+            AppVisible = True
             If UBound(Args) >= 1 And Not calledByGetter Then
                 Dim startSwitch As String = UCase$(Args(0))
                 If Left(startSwitch, 5) = "START" Then
@@ -36,6 +63,7 @@ Public Module CmdLineFetcher
                     ' in case we want to really be unobtrusive, specify hidden after your start
                     If Right(UCase$(startSwitch), 6) = "HIDDEN" Then
                         ExcelDnaUtil.Application.Visible = False
+                        AppVisible = False
                         startSwitch = Replace(startSwitch, "HIDDEN", "")
                     End If
                     ' CmdCaller is (usually) the calling workbook (second Cmdline argument, first is Excel itself)
@@ -69,12 +97,11 @@ Public Module CmdLineFetcher
                         End If
                     End If
                     If debugInfo Then
-                        Select Case UBound(Args)
-                            Case 1 : internalLogToEventViewer("Calling: " & CallingWB & Args(1), EventLogEntryType.Information)
-                            Case 2 : internalLogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2), EventLogEntryType.Information)
-                            Case 3 : internalLogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3), EventLogEntryType.Information)
-                            Case 4 : internalLogToEventViewer("Calling: " & CallingWB & Args(1) & "," & Args(2) & "," & Args(3) & "," & Args(4), EventLogEntryType.Information)
-                        End Select
+                        Dim debugArgs As String = ""
+                        For i As Integer = 1 To UBound(Args)
+                            debugArgs += Args(i) + ","
+                        Next
+                        internalLogToEventViewer("Calling: " & CallingWB & debugArgs, EventLogEntryType.Information)
                     End If
                     ' prohibit Argument fetching during opening workbooks when App.Run Macro is loaded
                     ArgsProhibited = True

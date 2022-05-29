@@ -1,29 +1,9 @@
 Imports ExcelDna.Integration
 Imports Microsoft.Office.Interop
-Imports System.Diagnostics ' needed for EventLogEntryType !!
+Imports System.Diagnostics ' needed for EventLogEntryType and Trace !!
 Imports System.IO
 Imports System.Runtime.InteropServices
 
-Public Module Globals
-    Public quittingApp As Boolean = False
-
-    ''' <summary>necessary to run in main app thread as excel can't quit otherwise</summary>
-    <ExcelCommand(Name:="QuitApp")>
-    Public Sub QuitApp()
-        ExcelDnaUtil.Application.DisplayAlerts = False
-        ExcelDnaUtil.Application.Quit()
-    End Sub
-
-    ''' <summary>Logs internal sErrMsg of eEventType to Application EventLog, source .NET Runtime</summary>
-    ''' <param name="sErrMsg"></param>
-    ''' <param name="eEventType"></param>
-    Public Sub internalLogToEventViewer(sErrMsg As String, Optional eEventType As EventLogEntryType = EventLogEntryType.Error)
-        Dim eventLog As EventLog = New EventLog("Application")
-        ' .Net Runtime is always there if .Net is installed
-        EventLog.WriteEntry(".NET Runtime", sErrMsg, eEventType, 1000)
-    End Sub
-
-End Module
 
 ''' <summary>main class to be used in clients: set theLogger = createObject("LogAddin.Logger")
 '''          doing logging with LogError, LogWarn, LogInfo, LogDebug and LogFatal
@@ -33,10 +13,6 @@ End Module
 <ClassInterface(ClassInterfaceType.AutoDispatch)>
 <ProgId("LogAddin.Logger")>
 Public Class Logger
-    <DllImport("kernel32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
-    Public Shared Function AttachConsole(dwProcessId As Integer) As Boolean
-        ' might implement this again, unclear how this works in mixed 32/64 bit environments...
-    End Function
 
     Private CallerInfo As String
     Private callingObject As Object
@@ -103,14 +79,6 @@ Public Class Logger
         If i = 0 Then MsgBox("No logentry defined in registry settings !")
         mirrorToStdOut = False
     End Sub
-
-    ''' <summary>encapsulates setting fetching (currently registry)</summary>
-    ''' <param name="Key">key of setting</param>
-    ''' <param name="defaultValue">default value to be used if no setting given</param>
-    ''' <returns>setting value</returns>
-    Private Function fetchSetting(Key As String, defaultValue As Object) As Object
-        fetchSetting = GetSetting("LogAddin", "Settings", Key, defaultValue)
-    End Function
 
     ''' <summary>sets properties for the Logger object, all parameters optional except theCallingObject</summary>
     ''' <param name="theCallingObject">the calling object (excel workbook)</param>
@@ -210,6 +178,9 @@ Public Class Logger
 20:     If Not (IsNothing(theMailIntro)) Then MailIntro = theMailIntro
 21:     If Not (IsNothing(theMailGreetings)) Then MailGreetings = theMailGreetings
 22:     If overrideCommonCaller Then commonCaller = theCaller
+        mirrorToStdOut = doMirrorToStdOut
+        If mirrorToStdOut AndAlso CmdLineFetcher.AppVisible Then ExcelDna.Logging.LogDisplay.Show()
+        If Boolean.Parse(CmdLineFetcher.fetchSetting("debug", "false")) Then LogToEventViewer("Logger.setProperties: commonCaller = " & commonCaller & ", callingObjectPath = " & callingObjectPath & ", callerFullPath = " & callerFullPath & "Caller = " & Caller & ", callingObject.Name = " & callingObject.Name & ", mirrorToStdOut = " & mirrorToStdOut & ", LogLevel = " & LogLevel & ", env =" & env & ", mailRecipients = " & mailRecipients & ", Subject = " & Subject & ", doEventLog = " & doEventLog & ", Sender = " & Sender & ", MailIntro = " & MailIntro & ", MailGreetings = " & MailGreetings, EventLogEntryType.Warning)
         Exit Sub
 
 setProperties_Err:
@@ -236,7 +207,6 @@ setProperties_Err:
 7:          If LCase$(logentry(i)) = "logmessage" Then FileMessage = FileMessage & LogMessage & vbTab
         Next
 8:      FileMessage = Left$(FileMessage, Len(FileMessage) - 1)
-        If mirrorToStdOut Then System.Console.WriteLine(FileMessage)
         If doEventLog Then
 9:          LogToEventViewer(LogMessage, LogPrio, 0)
 10:         MailFileLink = "Log in Event Viewer on machine \\" & Environ$("COMPUTERNAME")
@@ -259,6 +229,7 @@ LogWrite_Err:
     Public Sub LogFatal(LogMessage As String)
         quittingApp = True
         LogWrite(LogMessage, EventLogEntryType.FailureAudit)
+        If mirrorToStdOut AndAlso CmdLineFetcher.AppVisible Then Trace.TraceError(Date.Now().ToString(timeStampFormat, System.Globalization.CultureInfo.CreateSpecificCulture(timeStampCulture)) + " " + LogMessage)
         ExcelDnaUtil.Application.OnTime(DateTime.Now, "QuitApp")
     End Sub
 
@@ -266,6 +237,7 @@ LogWrite_Err:
     ''' <param name="LogMessage"></param>
     Public Sub LogError(LogMessage As String)
         LogWrite(LogMessage, EventLogEntryType.Error)
+        If mirrorToStdOut AndAlso CmdLineFetcher.AppVisible Then Trace.TraceError(Date.Now().ToString(timeStampFormat, System.Globalization.CultureInfo.CreateSpecificCulture(timeStampCulture)) + " " + LogMessage)
     End Sub
 
     ''' <summary>writes the log message LogMessage having appropriate priority (as shown in function name) depending on log level set</summary>
@@ -273,6 +245,7 @@ LogWrite_Err:
     Public Sub LogWarn(LogMessage As String)
         If LogLevel >= EventLogEntryType.Warning Then
             LogWrite(LogMessage, EventLogEntryType.Warning)
+            If mirrorToStdOut AndAlso CmdLineFetcher.AppVisible Then Trace.TraceWarning(Date.Now().ToString(timeStampFormat, System.Globalization.CultureInfo.CreateSpecificCulture(timeStampCulture)) + " " + LogMessage)
         End If
     End Sub
 
@@ -281,6 +254,7 @@ LogWrite_Err:
     Public Sub LogInfo(LogMessage As String)
         If LogLevel >= EventLogEntryType.Information Then
             LogWrite(LogMessage, EventLogEntryType.Information)
+            If mirrorToStdOut AndAlso CmdLineFetcher.AppVisible Then Trace.TraceInformation(Date.Now().ToString(timeStampFormat, System.Globalization.CultureInfo.CreateSpecificCulture(timeStampCulture)) + " " + LogMessage)
         End If
     End Sub
 
@@ -289,6 +263,7 @@ LogWrite_Err:
     Public Sub LogDebug(LogMessage As String)
         If LogLevel >= EventLogEntryType.SuccessAudit Then
             LogWrite(LogMessage, EventLogEntryType.SuccessAudit)
+            If mirrorToStdOut AndAlso CmdLineFetcher.AppVisible Then Trace.TraceInformation("/Debug " + Date.Now().ToString(timeStampFormat, System.Globalization.CultureInfo.CreateSpecificCulture(timeStampCulture)) + " " + LogMessage)
         End If
     End Sub
 
