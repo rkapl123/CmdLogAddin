@@ -98,7 +98,7 @@ Public Class Logger
     ''' [logPathMsg]
     ''' [MailGreetings]</param>
     ''' <param name="overrideCommonCaller">whether to override CallingObjectName (filename to log to) with theCaller</param>
-    ''' <param name="doMirrorToStdOut">used for mirroring to stdout, not implemented now (32/64 bit problems), left for backward compatibility</param>
+    ''' <param name="doMirrorToStdOut">Boolean used for mirroring logging to a trace dialog</param>
     Public Sub setProperties(Optional theCallingObject As Excel.Workbook = Nothing, Optional theLogLevel As Integer = 4, Optional theLogFilePath As String = Nothing,
         Optional theEnv As String = Nothing, Optional theCaller As String = Nothing, Optional theMailRecipients As String = Nothing,
         Optional theSubject As String = Nothing, Optional writeToEventLog As Boolean = False, Optional theSender As String = Nothing, Optional theMailIntro As String = Nothing,
@@ -136,7 +136,8 @@ Public Class Logger
                "   <logLine>" & vbCrLf &
                "   <logPathMsg>" & vbCrLf &
                "   <MailGreetings>" & vbCrLf &
-               "- overrideCommonCaller .. override CallingObjectName (filename to log to) with given parameter theCaller (true)",
+               "- overrideCommonCaller .. override CallingObjectName (filename to log to) with given parameter theCaller (true)" & vbCrLf &
+               "- doMirrorToStdOut .. Boolean used for mirroring logging to a trace dialog",
                    MsgBoxStyle.Information + MsgBoxStyle.OkOnly, String.Format("CmdLogAddin Version {0} Buildtime {1}", My.Application.Info.Version.ToString, sModuleInfo))
             MsgBox("Logging is then done with following five methods:" & vbCrLf &
                "- Logger.LogDebug(msg) .. writes msg if debug level (theLogLevel in setProperties) = 8" & vbCrLf &
@@ -191,7 +192,7 @@ setProperties_Err:
 
     ''' <summary>writes log information messages to defined Logfiles</summary>
     ''' <param name="LogMessage">Message to be logged</param>
-    ''' <param name="LogPrio">priority level (ERROR 1,  WARN 2, INFO 4, DEBUG 8)</param>
+    ''' <param name="LogPrio">priority level (ERROR 1, WARN 2, INFO 4, DEBUG 8 (SuccessAudit), FATAL 16 (FailureAudit))</param>
     Private Sub LogWrite(LogMessage As String, LogPrio As EventLogEntryType)
         Dim theLogFileStr, MailFileLink, FileMessage As String
         FileMessage = ""
@@ -229,7 +230,7 @@ LogWrite_Err:
     Public Sub LogFatal(LogMessage As String)
         quittingApp = True
         LogWrite(LogMessage, EventLogEntryType.FailureAudit)
-        If mirrorToStdOut AndAlso CmdLineFetcher.AppVisible Then Trace.TraceError(Date.Now().ToString(timeStampFormat, System.Globalization.CultureInfo.CreateSpecificCulture(timeStampCulture)) + " " + LogMessage)
+        If mirrorToStdOut AndAlso CmdLineFetcher.AppVisible Then Trace.TraceError("/Fatal " + Date.Now().ToString(timeStampFormat, System.Globalization.CultureInfo.CreateSpecificCulture(timeStampCulture)) + " " + LogMessage)
         ExcelDnaUtil.Application.OnTime(DateTime.Now, "QuitApp")
     End Sub
 

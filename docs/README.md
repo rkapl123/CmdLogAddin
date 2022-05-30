@@ -75,11 +75,11 @@ CmdLogAddin provides a logging tool to be used in VBA.
 Usage: First create a logger object:  
 `Set theLogger = CreateObject("LogAddin.Logger")`
 
-and initialise this object using the setProperties Method (all arguments are optional and have default values, except the CallingObject):  
+and initialize this object using the setProperties Method (all arguments are optional and have default values, except the CallingObject):  
 * theCallingObject .. The calling excel workbook ...
 * theLogLevel ..  (ERROR 1,  WARN 2, INFO 4, DEBUG 8), default = 4
-* theLogFilePath .. where to write the logfile (LogFilePath), defaults to theCallingObject's path
-* theEnv .. environment, empty if production, used to append env to LogFilePath for test/other environments
+* theLogFilePath .. where to write the log file (LogFilePath), defaults to theCallingObject's path
+* theEnv .. environment, empty if production, used to append theEnv to LogFilePath for test/other environments
 * theCaller .. if caller is not the callingObject (commonCaller) then this can be used to identify the active caller (in case of an addin handling multiple workbooks..).  
  Can include the full path to the calling workbook/document/..,  
  the Caller's name will be extracted by using last "\" as separator  
@@ -94,11 +94,12 @@ and initialise this object using the setProperties Method (all arguments are opt
     [logPathMsg]  
     [MailGreetings]  
 * overrideCommonCaller .. whether to override CallingObjectName (filename to log to) with theCaller
+* doMirrorToStdOut .. Boolean used for mirroring logging to a trace dialog
 
 Calling setProperties without any argument brings two helper message boxes that display the usage information.
 
 Example:  
-`theLogger.setProperties ThisWorkbook, theEnv:=env, theLoglevel:=8, theLogFilePath:="Logs", theMailRecipients:="admin@somewhere.com"`
+`theLogger.setProperties ThisWorkbook, theEnv:="Test", theLoglevel:=8, theLogFilePath:="Logs", theMailRecipients:="admin@somewhere.com"`
 
 Log messages are written by using methods LogDebug, LogInfo, LogWarn, LogError (sends an error mail using `System.Net.Mail`) and LogFatal (ends excel application):  
 `theLogger.LogDebug "testLog logging debug"`  
